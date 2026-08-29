@@ -291,7 +291,7 @@ export const apiClient = {
     file: File,
     platform = "telegram"
   ): Promise<BackendScanResponse> {
-    return dispatchMultipartScan("/api/scan/audio", file, platform, 90000); // 90s timeout for FFmpeg + Whisper + AI + VT
+    return dispatchMultipartScan("/api/scan/audio", file, platform, 180000); // 180s timeout for FFmpeg + Whisper + AI + VT
   },
 
   // 4. Video Scan (POST /api/scan/video)
@@ -299,6 +299,6 @@ export const apiClient = {
     file: File,
     platform = "telegram"
   ): Promise<BackendScanResponse> {
-    return dispatchMultipartScan("/api/scan/video", file, platform, 120000); // 120s timeout for Frames + Audio + Whisper + AI + VT
+    return dispatchMultipartScan("/api/scan/video", file, platform, 240000); // 240s timeout for Frames + Audio + Whisper + AI + VT
   },
 };
