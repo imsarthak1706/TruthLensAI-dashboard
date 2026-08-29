@@ -1,4 +1,5 @@
 import {
+  ModalityType,
   OverviewKpis,
   ScanFilters,
   ScanItem,
@@ -102,7 +103,46 @@ class CentralizedScanService implements IScanService {
       } catch (_) {}
     }
 
-    // 3. Fallback for demo static records if directly navigated by mock ID
+    // 3. Try fetching from live backend by scan_id
+    if (id && id !== "demo" && id !== MOCK_PRIMARY_SCAN_RESULT.id) {
+      try {
+        const backendData = await apiClient.getScanById(id);
+        if (backendData && backendData.scan_id) {
+          let modality: ModalityType = "text";
+          if (backendData.input_type === "image" || backendData.image_forensics || backendData.extracted_text) {
+            modality = "image";
+          } else if (backendData.input_type === "audio" || backendData.audio_forensics || backendData.transcript) {
+            modality = "audio";
+          } else if (backendData.input_type === "video" || backendData.video_metadata || backendData.frames) {
+            modality = "video";
+          }
+
+          const originalInput =
+            (backendData as any).input ||
+            backendData.transcript ||
+            backendData.extracted_text ||
+            `Scan ${backendData.scan_id.slice(0, 8)}`;
+
+          const normalized = normalizeBackendScanResponse(
+            backendData,
+            originalInput,
+            modality
+          );
+
+          inMemoryScans.set(normalized.id, normalized);
+          if (typeof window !== "undefined") {
+            try {
+              window.sessionStorage.setItem(`tl_scan_${normalized.id}`, JSON.stringify(normalized));
+            } catch (_) {}
+          }
+          return normalized;
+        }
+      } catch (_) {
+        // Backend 404 or network issue; fall through to mock check
+      }
+    }
+
+    // 4. Fallback for demo static records if directly navigated by mock ID
     if (id === MOCK_PRIMARY_SCAN_RESULT.id || id === "demo" || !id) {
       return MOCK_PRIMARY_SCAN_RESULT;
     }

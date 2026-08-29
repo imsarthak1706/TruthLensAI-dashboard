@@ -301,4 +301,48 @@ export const apiClient = {
   ): Promise<BackendScanResponse> {
     return dispatchMultipartScan("/api/scan/video", file, platform, 240000); // 240s timeout for Frames + Audio + Whisper + AI + VT
   },
+
+  // 5. Retrieve Scan by ID (GET /api/scan/{scan_id})
+  async getScanById(scanId: string): Promise<BackendScanResponse> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/scan/${encodeURIComponent(scanId)}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorDetail = `Backend HTTP ${response.status} ${response.statusText}`;
+        try {
+          const errorJson = await response.json();
+          errorDetail = errorJson.detail || errorJson.error || errorDetail;
+        } catch (_) {}
+        throw new ApiError(errorDetail, response.status);
+      }
+
+      const data: BackendScanResponse = await response.json();
+      return data;
+    } catch (error: any) {
+      if (error.name === "AbortError") {
+        throw new ApiError("Scan retrieval timed out. Please retry.", 408, "TIMEOUT");
+      }
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(
+        error.message || "Failed to retrieve scan from TruthLensAI backend.",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
 };
