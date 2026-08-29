@@ -8,6 +8,86 @@ import {
 } from "@/types/scan";
 import { BackendScanResponse } from "./apiClient";
 
+/**
+ * Maps raw forensic signal names to concise, human-readable explanations
+ * explaining what was detected and why it matters, without exposing internal scoring arithmetic.
+ */
+export function getSignalForensicExplanation(signalName: string): string {
+  const normalized = signalName.toLowerCase().trim();
+
+  // URL / Link patterns
+  if (normalized.includes("url") && (normalized.includes("malicious") || normalized.includes("virustotal") || normalized.includes("suspicious"))) {
+    return "External security intelligence flagged destination link as untrusted infrastructure.";
+  }
+  if (normalized.includes("url detected")) {
+    return "Contains external hyperlink; commonly leveraged to redirect targets to credential harvesting or malicious landing pages.";
+  }
+
+  // UPI / Payments
+  if (normalized.includes("upi")) {
+    return "Contains UPI payment handle; frequently used to solicit direct, irreversible money transfers.";
+  }
+  if (normalized.includes("payment")) {
+    return "Requests financial transaction or fund transfer; common in advance-fee and billing fraud.";
+  }
+
+  // OTP / Verification
+  if (normalized.includes("otp") || normalized.includes("verification request")) {
+    return "Solicits one-time password or security code; legitimate institutions never request authentication codes.";
+  }
+
+  // Urgency & Intimidation
+  if (normalized.includes("artificial urgency") || normalized.includes("high-pressure urgency")) {
+    return "Employs psychological pressure to induce panic and force hasty decisions before verification.";
+  }
+  if (normalized.includes("threat") || normalized.includes("account-pressure") || normalized.includes("account pressure")) {
+    return "Uses coercive threats such as account suspension or legal action to compel immediate compliance.";
+  }
+
+  // Credentials & Personal Data
+  if (normalized.includes("credential") || normalized.includes("login")) {
+    return "Directly requests passwords, PINs, or login credentials to execute unauthorized account takeover.";
+  }
+  if (normalized.includes("personal") || normalized.includes("identity information") || normalized.includes("kyc")) {
+    return "Solicits sensitive identity details (PAN/Aadhaar/KYC) for potential identity theft and account cloning.";
+  }
+
+  // Impersonation & Brand
+  if (normalized.includes("brand") || normalized.includes("organization") || normalized.includes("impersonation")) {
+    return "References a recognized brand or entity to construct false authority and deceptive trust.";
+  }
+
+  // Specific scam types
+  if (normalized.includes("prize") || normalized.includes("reward")) {
+    return "Promises unsolicited winnings or lottery rewards as bait to harvest fees or personal credentials.";
+  }
+  if (normalized.includes("investment") || normalized.includes("guaranteed-return")) {
+    return "Promotes unrealistic high-yield or guaranteed returns typical of financial fraud schemes.";
+  }
+  if (normalized.includes("support") || normalized.includes("remote-access")) {
+    return "Claims false technical issues or requests remote desktop access to compromise system security.";
+  }
+
+  // AI behavioral signals
+  if (normalized.includes("scam intent")) {
+    return "Neural language analysis identified conversational patterns consistent with known fraudulent campaigns.";
+  }
+  if (normalized.includes("social-engineering") || normalized.includes("social engineering")) {
+    return "Linguistic structure exploits psychological persuasion tactics to manipulate user action.";
+  }
+  if (normalized.includes("financial manipulation")) {
+    return "Deceptive framing detected regarding banking, account balances, or financial settlements.";
+  }
+
+  // Phone number
+  if (normalized.includes("phone number")) {
+    return "Direct telephone contact provided to facilitate out-of-band social engineering or callback scams.";
+  }
+
+  // Fallback for custom or diagnostic signals
+  return "Forensic indicator identified during multi-stage behavioral and heuristic inspection.";
+}
+
 export function normalizeBackendScanResponse(
   backend: BackendScanResponse,
   originalInput: string,
@@ -91,7 +171,7 @@ export function normalizeBackendScanResponse(
     return {
       id: `ev-${idx + 1}`,
       title: item.signal,
-      description: item.points > 0 ? `Risk engine weight: +${item.points} pts` : "Informational diagnostic signal",
+      description: getSignalForensicExplanation(item.signal),
       severity: evSev,
     };
   });
