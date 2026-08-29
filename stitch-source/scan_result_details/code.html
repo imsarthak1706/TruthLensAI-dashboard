@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>TruthLensAI Analysis - Scan Result</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#ffb1c4",
+                      "primary-container": "#34a547",
+                      "secondary-container": "#41474f",
+                      "on-primary-container": "#00320b",
+                      "outline-variant": "#3e4a3d",
+                      "tertiary-container": "#e9638e",
+                      "primary-fixed-dim": "#6fdd78",
+                      "tertiary-fixed": "#ffd9e1",
+                      "on-primary-fixed-variant": "#005319",
+                      "primary": "#6fdd78",
+                      "surface-container-lowest": "#0c0e12",
+                      "surface-bright": "#37393e",
+                      "inverse-surface": "#e2e2e8",
+                      "secondary": "#c1c7d0",
+                      "error": "#ffb4ab",
+                      "on-secondary-container": "#b0b5be",
+                      "inverse-primary": "#006e23",
+                      "surface-dim": "#111318",
+                      "on-tertiary-fixed": "#3f001a",
+                      "primary-fixed": "#8bfb91",
+                      "on-primary": "#00390e",
+                      "outline": "#889484",
+                      "background": "#111318",
+                      "on-error": "#690005",
+                      "on-secondary": "#2b3138",
+                      "on-tertiary-container": "#590028",
+                      "surface": "#111318",
+                      "on-tertiary": "#65002e",
+                      "on-secondary-fixed": "#161c23",
+                      "on-surface-variant": "#becab9",
+                      "on-error-container": "#ffdad6",
+                      "surface-tint": "#6fdd78",
+                      "on-tertiary-fixed-variant": "#891544",
+                      "secondary-fixed-dim": "#c1c7d0",
+                      "surface-container-highest": "#333539",
+                      "surface-container-low": "#1a1c20",
+                      "tertiary": "#ffb1c4",
+                      "on-background": "#e2e2e8",
+                      "on-surface": "#e2e2e8",
+                      "surface-variant": "#333539",
+                      "surface-container-high": "#282a2e",
+                      "inverse-on-surface": "#2f3035",
+                      "surface-container": "#1e2024",
+                      "error-container": "#93000a",
+                      "secondary-fixed": "#dde3ec",
+                      "on-secondary-fixed-variant": "#41474f",
+                      "on-primary-fixed": "#002106"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "stack-md": "16px",
+                      "container-margin": "24px",
+                      "stack-lg": "32px",
+                      "sidebar-width": "260px",
+                      "gutter": "16px",
+                      "stack-sm": "8px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Inter"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "body-sm": [
+                              "Inter"
+                      ],
+                      "code-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-sm": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "code-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "18px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-sm": [
+                              "20px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- SideNavBar (Shared Component) -->
+<nav aria-label="Main Navigation" class="hidden md:flex fixed left-0 top-0 h-full w-[260px] bg-surface-container-lowest border-r border-outline-variant flex-col py-container-margin space-y-stack-md z-40">
+<!-- Brand -->
+<div class="px-container-margin mb-8 flex items-center space-x-3">
+<span class="material-symbols-outlined text-primary text-[32px]" data-icon="shield" data-weight="fill" style="font-variation-settings: 'FILL' 1;">shield</span>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary">TruthLensAI</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-widest mt-1">Threat Detection Platform</p>
+</div>
+</div>
+<!-- Main Nav -->
+<div class="flex-1 flex flex-col space-y-1 w-full">
+<a class="flex items-center px-container-margin py-3 text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="dashboard">dashboard</span>
+<span class="font-label-caps text-label-caps uppercase">Overview</span>
+</a>
+<a class="flex items-center px-container-margin py-3 text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="security">security</span>
+<span class="font-label-caps text-label-caps uppercase">New Scan</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center px-container-margin py-3 text-primary font-bold border-l-2 border-primary bg-primary/10 transition-transform duration-150 scale-[0.98]" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="history">history</span>
+<span class="font-label-caps text-label-caps uppercase">Scan History</span>
+</a>
+<a class="flex items-center px-container-margin py-3 text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="public">public</span>
+<span class="font-label-caps text-label-caps uppercase">Community Intelligence</span>
+</a>
+<a class="flex items-center px-container-margin py-3 text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="report_problem">report_problem</span>
+<span class="font-label-caps text-label-caps uppercase">Incidents</span>
+</a>
+<a class="flex items-center px-container-margin py-3 text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="analytics">analytics</span>
+<span class="font-label-caps text-label-caps uppercase">Analytics</span>
+</a>
+<a class="flex items-center px-container-margin py-3 text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined mr-4" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps uppercase">Settings</span>
+</a>
+</div>
+<!-- System Status & Footer -->
+<div class="mt-auto px-container-margin pt-4 border-t border-outline-variant space-y-4">
+<div class="flex items-center text-primary">
+<span class="w-2 h-2 rounded-full bg-primary mr-2 animate-pulse shadow-[0_0_8px_rgba(111,221,120,0.6)]"></span>
+<span class="font-label-caps text-label-caps uppercase tracking-widest">System Online</span>
+</div>
+<div class="flex flex-col space-y-2">
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors py-2" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="account_circle">account_circle</span>
+<span class="font-body-sm text-body-sm">Profile</span>
+</a>
+<a class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors py-2" href="#">
+<span class="material-symbols-outlined mr-3 text-[20px]" data-icon="help">help</span>
+<span class="font-body-sm text-body-sm">Support</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 md:ml-[260px] min-h-screen bg-surface relative">
+<!-- TopAppBar (Shared Component) -->
+<header class="fixed top-0 right-0 w-full md:w-[calc(100%-260px)] z-50 bg-surface-dim/80 backdrop-blur-md border-b border-outline-variant flex justify-between items-center h-16 px-container-margin">
+<div class="flex items-center space-x-6">
+<!-- Mobile Menu Toggle (hidden on md) -->
+<button class="md:hidden text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<div class="hidden md:flex space-x-6">
+<a class="font-label-caps text-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors" href="#">Overview</a>
+<a class="font-label-caps text-label-caps uppercase text-primary border-b-2 border-primary pb-1 opacity-80 transition-opacity" href="#">History</a>
+<a class="font-label-caps text-label-caps uppercase text-on-surface-variant hover:text-primary transition-colors" href="#">Incidents</a>
+</div>
+</div>
+<div class="flex items-center space-x-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="apps">apps</span>
+</button>
+<button class="bg-primary/20 text-primary border border-primary/50 hover:bg-primary/30 px-4 py-2 rounded font-label-caps text-label-caps uppercase transition-colors hidden sm:block">
+                    New Scan
+                </button>
+<div class="w-8 h-8 rounded-full bg-surface-container-high border border-outline flex items-center justify-center overflow-hidden ml-2">
+<img alt="User Profile Avatar" class="w-full h-full object-cover" data-alt="A stylized, low-poly generic avatar portrait representing a generic user profile in a high-tech cybersecurity environment, illuminated by harsh, cool, artificial lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBHdeQc9kPo9K1mZ9KKizQpLodnnzKzuFNwlUwDLinlbLWI3sQx76n0z6b4E_nzlY9PimvS14QL4F63GmMwydx6ywQLRC7TjhjbuPJJPkGFQobX6KVXZzXUprjzz3ixne6rvn_bkQHuKAZOrmATvyXmWLYN5TNbzfny4mzp2t_VECDjRQGI7-O9b-aalykAchWGKxD8R_IL3QCp2jrDcofx4Y1J1OT8jK4k-LOvdBkeZTR-DFIGxiYE"/>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="pt-24 pb-12 px-container-margin max-w-7xl mx-auto space-y-stack-lg relative z-10">
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+<div>
+<h2 class="font-display-lg text-display-lg text-on-surface">TruthLensAI Analysis</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 font-code-sm text-code-sm">Scan ID: TRUTH-X92-A74B | Timestamp: 2023-10-27 14:32:01 UTC</p>
+</div>
+<div class="flex space-x-3">
+<button class="flex items-center space-x-2 px-4 py-2 bg-surface-container border border-outline-variant hover:bg-surface-container-high transition-colors rounded text-on-surface">
+<span class="material-symbols-outlined text-[18px]" data-icon="content_copy">content_copy</span>
+<span class="font-label-caps text-label-caps uppercase">Copy Result</span>
+</button>
+<button class="flex items-center space-x-2 px-4 py-2 bg-error/10 text-error border border-error/30 hover:bg-error/20 transition-colors rounded">
+<span class="material-symbols-outlined text-[18px]" data-icon="flag">flag</span>
+<span class="font-label-caps text-label-caps uppercase">Report Incident</span>
+</button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter">
+<!-- Main Risk Card (Spans 8 columns) -->
+<div class="md:col-span-8 bg-[#161B22] border border-error/50 rounded-lg p-6 relative overflow-hidden shadow-[0_0_15px_rgba(255,180,171,0.1)] group">
+<div class="absolute top-0 left-0 w-1 h-full bg-error shadow-[0_0_8px_rgba(255,180,171,0.8)] animate-pulse"></div>
+<div class="flex flex-col sm:flex-row justify-between items-start gap-6">
+<div class="space-y-4 flex-1">
+<div class="inline-flex items-center space-x-2 bg-error/15 px-3 py-1 rounded border border-error/20">
+<span class="material-symbols-outlined text-error text-[16px]" data-icon="warning" data-weight="fill" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="font-label-caps text-label-caps text-error uppercase font-bold tracking-widest">Critical Threat</span>
+</div>
+<div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-1">Malicious Link Detected</h3>
+<p class="font-code-sm text-code-sm text-on-surface-variant break-all bg-surface-container-lowest p-2 rounded border border-outline-variant inline-block">http://amazon-account-verify.xyz/login</p>
+</div>
+<div class="grid grid-cols-2 gap-4 mt-6">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">Confidence</p>
+<p class="font-body-md text-body-md font-bold text-error">HIGH (98%)</p>
+</div>
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">Input Type</p>
+<p class="font-body-md text-body-md text-on-surface">Text Extraction</p>
+</div>
+</div>
+</div>
+<!-- Risk Meter -->
+<div class="flex flex-col items-center justify-center bg-surface-container-lowest p-6 rounded-lg border border-outline-variant sm:w-48 w-full shrink-0 relative">
+<div class="relative w-32 h-32 flex items-center justify-center">
+<!-- Circular progress background -->
+<svg class="w-full h-full transform -rotate-90" viewbox="0 0 100 100">
+<circle cx="50" cy="50" fill="transparent" r="45" stroke="#333539" stroke-dasharray="283" stroke-dashoffset="0" stroke-width="8"></circle>
+<!-- Circular progress indicator (Red for Critical) -->
+<circle class="drop-shadow-[0_0_8px_rgba(255,180,171,0.5)]" cx="50" cy="50" fill="transparent" r="45" stroke="#ffb4ab" stroke-dasharray="283" stroke-dashoffset="0" stroke-width="8"></circle>
+</svg>
+<div class="absolute flex flex-col items-center justify-center text-center">
+<span class="font-display-lg text-display-lg text-error leading-none">100</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Risk Score</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action / Feedback Card (Spans 4 columns) -->
+<div class="md:col-span-4 bg-[#161B22] border border-[#30363D] rounded-lg p-6 flex flex-col justify-between">
+<div>
+<div class="flex items-center space-x-2 mb-4">
+<span class="material-symbols-outlined text-primary" data-icon="policy">policy</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Recommendation</h3>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                            Do not click links or enter credentials. This domain is attempting to impersonate a legitimate service. Verify account status through official, known-safe channels manually.
+                        </p>
+</div>
+<div class="mt-8 pt-6 border-t border-[#30363D]">
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-3 text-center">Was this analysis correct?</p>
+<div class="flex space-x-3">
+<button class="flex-1 flex items-center justify-center space-x-2 py-2 bg-surface-container border border-outline-variant hover:bg-error/10 hover:border-error/50 hover:text-error transition-colors rounded text-on-surface">
+<span class="material-symbols-outlined text-[18px]" data-icon="thumb_down">thumb_down</span>
+<span class="font-label-caps text-label-caps uppercase">Scam (Correct)</span>
+</button>
+<button class="flex-1 flex items-center justify-center space-x-2 py-2 bg-surface-container border border-outline-variant hover:bg-primary/10 hover:border-primary/50 hover:text-primary transition-colors rounded text-on-surface">
+<span class="material-symbols-outlined text-[18px]" data-icon="thumb_up">thumb_up</span>
+<span class="font-label-caps text-label-caps uppercase">Safe (False Pos)</span>
+</button>
+</div>
+</div>
+</div>
+<!-- AI Analysis & Evidence (Spans 6 columns) -->
+<div class="md:col-span-6 bg-[#161B22] border border-[#30363D] rounded-lg p-0 overflow-hidden flex flex-col">
+<div class="px-6 py-4 border-b border-[#30363D] bg-surface-container-lowest flex items-center space-x-2">
+<span class="material-symbols-outlined text-tertiary" data-icon="psychology">psychology</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">AI Analysis &amp; Evidence</h3>
+</div>
+<div class="p-6 space-y-6">
+<!-- Evidence List -->
+<div class="space-y-3">
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">Why this was flagged</p>
+<div class="flex items-start space-x-3">
+<span class="material-symbols-outlined text-error mt-0.5 text-[20px]" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">Suspicious URL Pattern Detected</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-xs mt-0.5">Domain uses typosquatting tactics targeting 'Amazon'.</p>
+</div>
+</div>
+<div class="flex items-start space-x-3">
+<span class="material-symbols-outlined text-error mt-0.5 text-[20px]" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">High Artificial Urgency</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-xs mt-0.5">Language implies immediate account suspension if ignored.</p>
+</div>
+</div>
+<div class="flex items-start space-x-3">
+<span class="material-symbols-outlined text-error mt-0.5 text-[20px]" data-icon="check_circle" data-weight="fill" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="font-body-sm text-body-sm text-on-surface font-medium">VirusTotal Consensus</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant text-xs mt-0.5">Multiple security vendors flag this infrastructure.</p>
+</div>
+</div>
+</div>
+<!-- AI Summary -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded p-4 relative">
+<div class="absolute -top-3 left-4 bg-surface-container-lowest px-2 text-tertiary">
+<span class="material-symbols-outlined text-[16px]" data-icon="neurology">neurology</span>
+</div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2">AI Explanation</p>
+<p class="font-body-sm text-body-sm text-on-surface leading-relaxed">
+                                The linguistic analysis indicates a 94% probability of social engineering intent. The message constructs an artificial crisis (account locking) to bypass critical thinking, directing the user to a non-standard domain designed to harvest credentials.
+                            </p>
+<!-- Mini breakdown bars -->
+<div class="mt-4 space-y-2">
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="font-code-sm text-code-sm text-on-surface-variant">Scam Intent</span>
+<span class="font-code-sm text-code-sm text-error">94%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-error h-full" style="width: 94%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="font-code-sm text-code-sm text-on-surface-variant">Social Engineering</span>
+<span class="font-code-sm text-code-sm text-error">88%</span>
+</div>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full overflow-hidden">
+<div class="bg-error h-full" style="width: 88%"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- External & Community Intel (Spans 6 columns, stacked) -->
+<div class="md:col-span-6 flex flex-col gap-gutter">
+<!-- VirusTotal Card -->
+<div class="bg-[#161B22] border border-[#30363D] rounded-lg p-6">
+<div class="flex items-center space-x-2 mb-4">
+<span class="material-symbols-outlined text-secondary" data-icon="travel_explore">travel_explore</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">External Intelligence</h3>
+<span class="font-label-caps text-label-caps text-on-surface-variant ml-auto bg-surface-container-highest px-2 py-1 rounded">VirusTotal</span>
+</div>
+<div class="flex items-center justify-between">
+<div class="flex space-x-6">
+<div class="text-center">
+<span class="block font-display-lg text-display-lg text-error">12</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Malicious</span>
+</div>
+<div class="text-center">
+<span class="block font-display-lg text-display-lg text-[#F9A826]">2</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Suspicious</span>
+</div>
+<div class="text-center">
+<span class="block font-display-lg text-display-lg text-primary">60</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant uppercase">Harmless</span>
+</div>
+</div>
+<!-- Circular ratio viz -->
+<div class="relative w-16 h-16 rounded-full border-4 border-surface-container-highest overflow-hidden" style="background: conic-gradient(#ffb4ab 0% 16%, #F9A826 16% 19%, #6fdd78 19% 100%);">
+<div class="absolute inset-2 bg-[#161B22] rounded-full"></div>
+</div>
+</div>
+</div>
+<!-- Community Intelligence -->
+<div class="bg-[#161B22] border border-[#30363D] rounded-lg p-0 flex-1 flex flex-col">
+<div class="px-6 py-4 border-b border-[#30363D] bg-surface-container-lowest flex items-center space-x-2">
+<span class="material-symbols-outlined text-primary-fixed" data-icon="groups">groups</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Community Intelligence</h3>
+</div>
+<div class="p-6 space-y-4">
+<div class="bg-surface-container-lowest p-3 rounded border border-outline-variant flex justify-between items-center group hover:border-primary/50 transition-colors">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">URL Reputation</p>
+<p class="font-code-sm text-code-sm text-on-surface truncate max-w-[200px] sm:max-w-[250px]">http://amazon-account-verify.xyz/login</p>
+</div>
+<div class="flex items-center space-x-2 bg-error/10 px-2 py-1 rounded text-error border border-error/20">
+<span class="material-symbols-outlined text-[16px]" data-icon="flag">flag</span>
+<span class="font-body-sm text-body-sm font-bold">104 Reports</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-3 rounded border border-outline-variant flex justify-between items-center group hover:border-primary/50 transition-colors">
+<div>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">Domain Reputation</p>
+<p class="font-code-sm text-code-sm text-on-surface truncate max-w-[200px] sm:max-w-[250px]">amazon-account-verify.xyz</p>
+</div>
+<div class="flex items-center space-x-2 bg-[#F9A826]/10 px-2 py-1 rounded text-[#F9A826] border border-[#F9A826]/20">
+<span class="material-symbols-outlined text-[16px]" data-icon="warning">warning</span>
+<span class="font-body-sm text-body-sm font-bold">15 Reports</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

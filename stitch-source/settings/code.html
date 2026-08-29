@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Settings - TruthLensAI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed-dim": "#ffb1c4",
+                        "primary-container": "#34a547",
+                        "secondary-container": "#41474f",
+                        "on-primary-container": "#00320b",
+                        "outline-variant": "#3e4a3d",
+                        "tertiary-container": "#e9638e",
+                        "primary-fixed-dim": "#6fdd78",
+                        "tertiary-fixed": "#ffd9e1",
+                        "on-primary-fixed-variant": "#005319",
+                        "primary": "#6fdd78",
+                        "surface-container-lowest": "#0c0e12",
+                        "surface-bright": "#37393e",
+                        "inverse-surface": "#e2e2e8",
+                        "secondary": "#c1c7d0",
+                        "error": "#ffb4ab",
+                        "on-secondary-container": "#b0b5be",
+                        "inverse-primary": "#006e23",
+                        "surface-dim": "#111318",
+                        "on-tertiary-fixed": "#3f001a",
+                        "primary-fixed": "#8bfb91",
+                        "on-primary": "#00390e",
+                        "outline": "#889484",
+                        "background": "#111318",
+                        "on-error": "#690005",
+                        "on-secondary": "#2b3138",
+                        "on-tertiary-container": "#590028",
+                        "surface": "#111318",
+                        "on-tertiary": "#65002e",
+                        "on-secondary-fixed": "#161c23",
+                        "on-surface-variant": "#becab9",
+                        "on-error-container": "#ffdad6",
+                        "surface-tint": "#6fdd78",
+                        "on-tertiary-fixed-variant": "#891544",
+                        "secondary-fixed-dim": "#c1c7d0",
+                        "surface-container-highest": "#333539",
+                        "surface-container-low": "#1a1c20",
+                        "tertiary": "#ffb1c4",
+                        "on-background": "#e2e2e8",
+                        "on-surface": "#e2e2e8",
+                        "surface-variant": "#333539",
+                        "surface-container-high": "#282a2e",
+                        "inverse-on-surface": "#2f3035",
+                        "surface-container": "#1e2024",
+                        "error-container": "#93000a",
+                        "secondary-fixed": "#dde3ec",
+                        "on-secondary-fixed-variant": "#41474f",
+                        "on-primary-fixed": "#002106"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "stack-md": "16px",
+                        "container-margin": "24px",
+                        "stack-lg": "32px",
+                        "sidebar-width": "260px",
+                        "gutter": "16px",
+                        "stack-sm": "8px"
+                    },
+                    "fontFamily": {
+                        "display-lg": ["Inter"],
+                        "label-caps": ["JetBrains Mono"],
+                        "body-md": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-sm": ["Inter"],
+                        "headline-md": ["Inter"]
+                    },
+                    "fontSize": {
+                        "display-lg": ["48px", { "lineHeight": "56px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-caps": ["12px", { "lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-sm": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+                        "code-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0A0C10; color: #e2e2e8; }
+        .glass-panel { background-color: #161B22; border: 1px solid #30363D; }
+        .glass-input { background-color: #0A0C10; border: 1px solid #30363D; transition: box-shadow 0.2s, border-color 0.2s; }
+        .glass-input:focus { outline: none; border-color: #6fdd78; box-shadow: 0 0 0 2px rgba(111, 221, 120, 0.2); }
+        .nav-item-active { border-left: 2px solid #6fdd78; background-color: rgba(111, 221, 120, 0.1); color: #6fdd78; font-weight: 700; }
+        
+        /* Toggle Switch CSS */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #6fdd78;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #6fdd78;
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex selection:bg-primary/30 selection:text-primary">
+<!-- SideNavBar (Shared Component) -->
+<nav class="hidden md:flex flex-col h-full py-container-margin space-y-stack-md bg-surface-container-lowest fixed left-0 top-0 w-[260px] border-r border-outline-variant z-50">
+<div class="px-container-margin mb-8 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">shield</span>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tight">TruthLensAI</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant uppercase mt-1">Threat Detection Platform</p>
+</div>
+</div>
+<div class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body-sm text-body-sm">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">security</span>
+<span class="font-body-sm text-body-sm">New Scan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-sm text-body-sm">Scan History</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">public</span>
+<span class="font-body-sm text-body-sm">Community Intelligence</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">report_problem</span>
+<span class="font-body-sm text-body-sm">Incidents</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-sm text-body-sm">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-primary font-bold border-l-2 border-primary bg-primary/10" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-sm text-body-sm">Settings</span>
+</a>
+</div>
+<div class="px-4 mt-auto space-y-1">
+<div class="px-4 py-2 mb-4">
+<div class="flex items-center gap-2 text-primary">
+<span class="relative flex h-2 w-2">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+</span>
+<span class="font-label-caps text-label-caps uppercase">System Online</span>
+</div>
+</div>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">account_circle</span>
+<span class="font-body-sm text-body-sm">Profile</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-sm text-body-sm">Support</span>
+</a>
+</div>
+</nav>
+<!-- TopAppBar (Shared Component) -->
+<header class="hidden md:flex justify-between items-center h-16 px-container-margin bg-surface-dim/80 backdrop-blur-md fixed top-0 right-0 w-[calc(100%-260px)] z-40 border-b border-outline-variant">
+<div class="flex items-center gap-6">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Settings</h2>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">apps</span>
+</button>
+<button class="px-4 py-2 bg-primary text-on-primary-container font-body-sm text-body-sm font-semibold rounded-DEFAULT hover:bg-primary-fixed transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">add</span>
+                New Scan
+            </button>
+<img alt="User Profile Avatar" class="w-8 h-8 rounded-full border border-outline-variant object-cover ml-2" data-alt="A small, stylized avatar of a user in a futuristic, low-poly cyberpunk style. The avatar is rendered in dark greys with subtle neon green highlights. The image is circular and minimalist." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCM3CzgG0E3I0Ve49GChaMGBGvzXsD-B-xs78UE7vrXdAN5yE_JfJfHVuHA9XoJeOM4oWbPBhlQ1vXriJExlnZ3CCC-mbzxvyKIvCxHXsYrALFeA4rVaNPOGNvBU5tVwZkpXSVRHUD_lKHKxwD8xMzfePhuaDI9saP0g9vmqLwkpdahRy3t4yj6vVLdImb2z2fR4w2haGk7kelPQIuQ7Xa9_ZZaSEDDhScep_5ysMUpdL9k4bUKdiL3"/>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-[260px] pt-[80px] p-container-margin w-full max-w-7xl mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter items-start">
+<!-- Settings Sidebar -->
+<aside class="lg:col-span-3 glass-panel rounded-lg overflow-hidden">
+<div class="p-4 border-b border-outline-variant/50">
+<h3 class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">Configuration</h3>
+</div>
+<nav class="flex flex-col py-2">
+<button class="text-left px-4 py-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors flex items-center gap-3">
+<span class="material-symbols-outlined text-lg">person</span> Profile
+                    </button>
+<button class="text-left px-4 py-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors flex items-center gap-3">
+<span class="material-symbols-outlined text-lg">notifications</span> Notifications
+                    </button>
+<button class="text-left px-4 py-3 font-body-sm text-body-sm text-primary bg-primary/10 border-l-2 border-primary font-semibold flex items-center gap-3">
+<span class="material-symbols-outlined text-lg" style="font-variation-settings: 'FILL' 1;">shield_lock</span> Privacy &amp; Retention
+                    </button>
+<button class="text-left px-4 py-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors flex items-center gap-3">
+<span class="material-symbols-outlined text-lg">api</span> Integrations &amp; API
+                    </button>
+<button class="text-left px-4 py-3 font-body-sm text-body-sm text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors flex items-center gap-3">
+<span class="material-symbols-outlined text-lg">palette</span> Appearance
+                    </button>
+</nav>
+</aside>
+<!-- Settings Content Area -->
+<div class="lg:col-span-9 space-y-stack-lg">
+<!-- Privacy & Retention -->
+<section class="glass-panel rounded-lg p-6">
+<div class="mb-6 pb-4 border-b border-outline-variant/50 flex justify-between items-start">
+<div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Privacy &amp; Data Retention</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Manage how your scan data is stored and processed by TruthLensAI engines.</p>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl opacity-50">data_usage</span>
+</div>
+<div class="space-y-6">
+<!-- Toggle 1 -->
+<div class="flex items-center justify-between">
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold mb-1">Store Threat Telemetry</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Allow anonymous submission of threat patterns to Community Intelligence.</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-surface-container-highest border-4 border-outline-variant appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" id="toggle1" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container cursor-pointer transition-colors duration-200 ease-in-out" for="toggle1"></label>
+</div>
+</div>
+<!-- Toggle 2 -->
+<div class="flex items-center justify-between">
+<div>
+<h4 class="font-body-md text-body-md text-on-surface font-semibold mb-1">Retain Raw Scan Payloads</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Keep original files/URLs for deeper forensic analysis up to 30 days.</p>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-surface-container-highest border-4 border-outline-variant appearance-none cursor-pointer z-10 transition-transform duration-200 ease-in-out" id="toggle2" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-surface-container cursor-pointer transition-colors duration-200 ease-in-out" for="toggle2"></label>
+</div>
+</div>
+<!-- Retention Policy Info -->
+<div class="bg-surface-container rounded-DEFAULT p-4 border border-outline-variant/30 flex gap-4 mt-4">
+<span class="material-symbols-outlined text-primary">info</span>
+<div>
+<h5 class="font-body-sm text-body-sm text-on-surface font-semibold mb-1">Standard Retention Policy</h5>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                                    By default, processed metadata and IOCs (Indicators of Compromise) are retained indefinitely for historical correlation. Raw payloads are purged after 72 hours unless explicitly configured otherwise.
+                                </p>
+</div>
+</div>
+<!-- Danger Zone -->
+<div class="pt-6 border-t border-outline-variant/50 mt-8">
+<h4 class="font-label-caps text-label-caps text-error uppercase mb-4 tracking-wider">Danger Zone</h4>
+<div class="flex items-center justify-between p-4 border border-error/30 rounded-DEFAULT bg-error/5">
+<div>
+<h5 class="font-body-md text-body-md text-on-surface font-semibold">Delete All History</h5>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Permanently remove all scan logs and associated metadata. This action cannot be undone.</p>
+</div>
+<button class="px-4 py-2 border border-error text-error hover:bg-error hover:text-on-error font-body-sm text-body-sm font-semibold rounded-DEFAULT transition-colors">
+                                    Purge Data
+                                </button>
+</div>
+</div>
+</div>
+</section>
+<!-- API & Integrations Bento Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- API Keys -->
+<div class="glass-panel rounded-lg p-6 flex flex-col h-full">
+<div class="mb-4 flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">API Credentials</h3>
+<span class="material-symbols-outlined text-secondary text-xl">key</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6">Manage authentication tokens for programmatic access to the TruthLensAI engine.</p>
+<div class="space-y-4 flex-1">
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 block">Primary Production Key</label>
+<div class="flex gap-2">
+<input class="glass-input w-full rounded-DEFAULT px-3 py-2 font-code-sm text-code-sm text-secondary" readonly="" type="password" value="tlai_prod_8f92j3n4k5m6l7o8p9q0"/>
+<button class="p-2 border border-outline-variant rounded-DEFAULT hover:bg-surface-container transition-colors text-on-surface" title="Copy">
+<span class="material-symbols-outlined text-sm">content_copy</span>
+</button>
+</div>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-on-surface-variant uppercase mb-2 block">Webhook Endpoint URL</label>
+<input class="glass-input w-full rounded-DEFAULT px-3 py-2 font-code-sm text-code-sm text-on-surface placeholder:text-on-surface-variant/50" placeholder="https://your-domain.com/webhook" type="text"/>
+</div>
+</div>
+<div class="mt-6 pt-4 border-t border-outline-variant/50">
+<button class="text-primary hover:text-primary-fixed font-body-sm text-body-sm font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-sm">add</span> Generate New Key
+                            </button>
+</div>
+</div>
+<!-- External Integrations -->
+<div class="glass-panel rounded-lg p-6 flex flex-col h-full">
+<div class="mb-4 flex justify-between items-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">External Integrations</h3>
+<span class="material-symbols-outlined text-secondary text-xl">extension</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-6">Connect third-party services to enrich threat data and receive alerts.</p>
+<div class="space-y-3 flex-1">
+<!-- Telegram -->
+<div class="p-3 border border-outline-variant rounded-DEFAULT flex items-center justify-between hover:bg-surface-container transition-colors group cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-[#2AABEE]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#2AABEE]">send</span>
+</div>
+<div>
+<h5 class="font-body-sm text-body-sm text-on-surface font-semibold">Telegram Bot</h5>
+<p class="font-label-caps text-label-caps text-primary mt-0.5">Connected</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface transition-colors">settings</span>
+</div>
+<!-- VirusTotal -->
+<div class="p-3 border border-outline-variant rounded-DEFAULT flex items-center justify-between hover:bg-surface-container transition-colors group cursor-pointer">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-[#394EFF]/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[#394EFF]">bug_report</span>
+</div>
+<div>
+<h5 class="font-body-sm text-body-sm text-on-surface font-semibold">VirusTotal API</h5>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-0.5">Not Configured</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant group-hover:text-on-surface transition-colors">chevron_right</span>
+</div>
+<!-- Slack -->
+<div class="p-3 border border-outline-variant rounded-DEFAULT flex items-center justify-between hover:bg-surface-container transition-colors group cursor-pointer opacity-50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded bg-white/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-white/50">tag</span>
+</div>
+<div>
+<h5 class="font-body-sm text-body-sm text-on-surface font-semibold">Slack Webhook</h5>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-0.5">Coming Soon</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Save Actions (Sticky Footer conceptual) -->
+<div class="flex justify-end gap-3 pt-4">
+<button class="px-6 py-2 border border-outline-variant text-on-surface font-body-sm text-body-sm font-semibold rounded-DEFAULT hover:bg-surface-container transition-colors">
+                        Discard Changes
+                    </button>
+<button class="px-6 py-2 bg-primary text-on-primary-container font-body-sm text-body-sm font-semibold rounded-DEFAULT hover:bg-primary-fixed transition-colors">
+                        Save Configuration
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>
