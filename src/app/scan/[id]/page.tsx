@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { scanService } from "@/services/scanService";
+import { incidentService } from "@/services/incidentService";
 import { ScanResult } from "@/types/scan";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
@@ -21,6 +22,7 @@ export default function ScanResultDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [feedback, setFeedback] = useState<"scam" | "safe" | null>(null);
   const [copied, setCopied] = useState(false);
+  const [reporting, setReporting] = useState(false);
 
   useEffect(() => {
     async function loadScan() {
@@ -45,8 +47,18 @@ export default function ScanResultDetailsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleReportIncident = () => {
-    router.push("/incidents");
+  const handleReportIncident = async () => {
+    if (!scan || reporting) return;
+    try {
+      setReporting(true);
+      const incident = await incidentService.createIncidentFromScan(scan);
+      router.push(`/incidents?selectedId=${incident.id}`);
+    } catch (err) {
+      console.error("Failed to create incident from scan", err);
+      router.push("/incidents");
+    } finally {
+      setReporting(false);
+    }
   };
 
   if (loading) {
@@ -109,10 +121,11 @@ export default function ScanResultDetailsPage() {
           <Button
             variant="danger"
             size="md"
-            icon="flag"
+            icon={reporting ? "sync" : "flag"}
+            disabled={reporting}
             onClick={handleReportIncident}
           >
-            Report Incident
+            {reporting ? "Creating..." : "Report Incident"}
           </Button>
         </div>
       </div>

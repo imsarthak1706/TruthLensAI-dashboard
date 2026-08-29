@@ -1,4 +1,4 @@
-export type IncidentSeverity = 'critical' | 'high' | 'medium' | 'low';
+export type IncidentSeverity = 'critical' | 'high' | 'medium' | 'low' | 'suspicious' | 'safe';
 export type IncidentStatus = 'open' | 'investigating' | 'resolved';
 
 export interface IncidentArtifact {
@@ -18,6 +18,7 @@ export interface IncidentItem {
   status: IncidentStatus;
   analyst?: string;
   description?: string;
+  scanId?: string;
 }
 
 export interface IncidentDetail extends IncidentItem {

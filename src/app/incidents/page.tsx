@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { incidentService } from "@/services/incidentService";
 import { IncidentDetail, IncidentItem, IncidentKpis } from "@/types/incident";
 import { Icon } from "@/components/ui/Icon";
@@ -10,7 +11,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SlideOver } from "@/components/ui/SlideOver";
 
-export default function IncidentCenterPage() {
+function IncidentCenterContent() {
+  const searchParams = useSearchParams();
+  const selectedIdFromUrl = searchParams?.get("selectedId");
+
   const [kpis, setKpis] = useState<IncidentKpis | null>(null);
   const [incidents, setIncidents] = useState<IncidentItem[]>([]);
   const [selectedIncident, setSelectedIncident] = useState<IncidentDetail | null>(null);
@@ -27,8 +31,10 @@ export default function IncidentCenterPage() {
         ]);
         setKpis(kpiData);
         setIncidents(items);
-        // Default open the first incident on desktop for instant demo
-        const detail = await incidentService.getIncidentById(items[0]?.id || "INC-4092");
+
+        // Open the URL selectedId if present, otherwise fallback to first item
+        const targetId = selectedIdFromUrl || items[0]?.id || "INC-4092";
+        const detail = await incidentService.getIncidentById(targetId);
         setSelectedIncident(detail);
       } catch (err) {
         console.error("Failed to load incidents", err);
@@ -37,7 +43,7 @@ export default function IncidentCenterPage() {
       }
     }
     load();
-  }, []);
+  }, [selectedIdFromUrl]);
 
   const handleSelectIncident = async (id: string) => {
     try {
@@ -334,6 +340,22 @@ export default function IncidentCenterPage() {
                   {selectedIncident.analyst || "SOC Team Alpha"}
                 </p>
               </div>
+
+              {/* Linked Scan ID */}
+              {selectedIncident.scanId && (
+                <div className="col-span-2 pt-2 border-t border-[#30363D]/40 flex items-center justify-between">
+                  <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
+                    Forensic Scan ID
+                  </span>
+                  <Link
+                    href={`/scan/${selectedIncident.scanId}`}
+                    className="font-code-sm text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <span>{selectedIncident.scanId.slice(0, 16)}...</span>
+                    <Icon name="open_in_new" className="text-xs" />
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Risk Overview */}
@@ -393,3 +415,21 @@ export default function IncidentCenterPage() {
     </div>
   );
 }
+
+export default function IncidentCenterPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+          <span className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          <p className="font-code-sm text-sm text-on-surface-variant">
+            Loading Incident Center...
+          </p>
+        </div>
+      }
+    >
+      <IncidentCenterContent />
+    </Suspense>
+  );
+}
+
