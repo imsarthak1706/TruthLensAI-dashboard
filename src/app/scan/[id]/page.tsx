@@ -397,38 +397,33 @@ export default function ScanResultDetailsPage() {
                 {scan.aiExplanation}
               </p>
 
-              {/* Breakdown Bars */}
-              <div className="mt-4 space-y-2.5 pt-3 border-t border-surface-variant/40">
-                {scan.breakdown.map((item) => (
-                  <div key={item.name}>
-                    <div className="flex justify-between text-xs mb-1 font-code-sm">
+              {/* Breakdown Bars / Dimensions */}
+              {scan.breakdown && scan.breakdown.length > 0 ? (
+                <div className="mt-4 space-y-2.5 pt-3 border-t border-surface-variant/40">
+                  {scan.breakdown.map((item) => (
+                    <div key={item.name} className="flex justify-between items-center text-xs font-code-sm py-1 border-b border-surface-variant/20 last:border-0">
                       <span className="text-on-surface-variant">{item.name}</span>
                       <span
                         className={
-                          item.score >= 70
+                          item.category === "critical"
                             ? "text-error font-bold"
-                            : item.score > 0
+                            : item.category === "warning"
                             ? "text-tertiary-container font-bold"
                             : "text-primary font-semibold"
                         }
                       >
-                        {item.score}%
+                        {item.statusText || (item.score !== undefined ? `${item.score}%` : "Detected")}
                       </span>
                     </div>
-                    <ProgressBar
-                      value={item.score}
-                      colorClass={
-                        item.score >= 70
-                          ? "bg-error"
-                          : item.score > 0
-                          ? "bg-tertiary-container"
-                          : "bg-primary"
-                      }
-                      heightClass="h-1.5"
-                    />
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 pt-3 border-t border-surface-variant/40 text-center">
+                  <p className="text-xs font-code-sm text-on-surface-variant/70">
+                    Neural dimension breakdown not available for this scan.
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -447,41 +442,53 @@ export default function ScanResultDetailsPage() {
               </span>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex space-x-6">
-                <div className="text-center">
-                  <span className="block font-display-lg text-2xl font-bold text-error">
-                    {scan.externalIntel.maliciousCount}
-                  </span>
-                  <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
-                    Malicious
-                  </span>
+            {scan.externalIntel && scan.externalIntel.available && scan.externalIntel.totalEngines > 0 ? (
+              <div className="flex items-center justify-between">
+                <div className="flex space-x-6">
+                  <div className="text-center">
+                    <span className="block font-display-lg text-2xl font-bold text-error">
+                      {scan.externalIntel.maliciousCount}
+                    </span>
+                    <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
+                      Malicious
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="block font-display-lg text-2xl font-bold text-[#F9A826]">
+                      {scan.externalIntel.suspiciousCount}
+                    </span>
+                    <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
+                      Suspicious
+                    </span>
+                  </div>
+                  <div className="text-center">
+                    <span className="block font-display-lg text-2xl font-bold text-primary">
+                      {scan.externalIntel.harmlessCount}
+                    </span>
+                    <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
+                      Harmless
+                    </span>
+                  </div>
                 </div>
-                <div className="text-center">
-                  <span className="block font-display-lg text-2xl font-bold text-[#F9A826]">
-                    {scan.externalIntel.suspiciousCount}
-                  </span>
-                  <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
-                    Suspicious
-                  </span>
-                </div>
-                <div className="text-center">
-                  <span className="block font-display-lg text-2xl font-bold text-primary">
-                    {scan.externalIntel.harmlessCount}
-                  </span>
-                  <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
-                    Harmless
-                  </span>
-                </div>
-              </div>
 
-              {/* Conic circular ratio chart */}
-              <VirusTotalRatioChart
-                malicious={scan.externalIntel.maliciousCount}
-                suspicious={scan.externalIntel.suspiciousCount}
-                harmless={scan.externalIntel.harmlessCount}
-              />
-            </div>
+                {/* Conic circular ratio chart */}
+                <VirusTotalRatioChart
+                  malicious={scan.externalIntel.maliciousCount}
+                  suspicious={scan.externalIntel.suspiciousCount}
+                  harmless={scan.externalIntel.harmlessCount}
+                />
+              </div>
+            ) : (
+              <div className="py-6 px-4 rounded border border-dashed border-outline-variant/40 bg-[#0C0E12] text-center space-y-1.5">
+                <Icon name="travel_explore" className="text-on-surface-variant text-2xl mx-auto opacity-50" />
+                <p className="font-code-sm text-xs font-semibold text-on-surface">
+                  External intelligence unavailable
+                </p>
+                <p className="text-[11px] font-code-sm text-on-surface-variant/70 max-w-sm mx-auto">
+                  No third-party threat engine consensus data returned for this payload.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Community Intelligence Consensus */}
@@ -493,36 +500,52 @@ export default function ScanResultDetailsPage() {
               </h3>
             </div>
 
-            <div className="p-6 space-y-3 flex-1">
-              {scan.communityIntel.map((ci, idx) => (
-                <div
-                  key={`${ci.type}-${idx}`}
-                  className="bg-[#0C0E12] p-3.5 rounded border border-outline-variant flex justify-between items-center group hover:border-primary/50 transition-colors"
-                >
-                  <div className="overflow-hidden mr-3">
-                    <p className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-0.5">
-                      {ci.type}
-                    </p>
-                    <p className="font-code-sm text-xs text-on-surface truncate max-w-[220px] sm:max-w-[280px]">
-                      {ci.target}
-                    </p>
-                  </div>
-                  <div
-                    className={`flex items-center space-x-2 px-2.5 py-1 rounded border shrink-0 ${
-                      ci.severity === "critical"
-                        ? "bg-error/10 text-error border-error/20"
-                        : ci.severity === "high"
-                        ? "bg-tertiary-container/10 text-tertiary-container border-tertiary-container/20"
-                        : "bg-primary/10 text-primary border-primary/20"
-                    }`}
-                  >
-                    <Icon name={ci.severity === "safe" ? "check" : "flag"} className="text-xs" />
-                    <span className="font-code-sm text-xs font-bold">
-                      {ci.reportCount} Reports
-                    </span>
-                  </div>
+            <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
+              {scan.communityIntel && scan.communityIntel.length > 0 ? (
+                <div className="space-y-3">
+                  {scan.communityIntel.map((ci, idx) => (
+                    <div
+                      key={`${ci.type}-${idx}`}
+                      className="bg-[#0C0E12] p-3.5 rounded border border-outline-variant flex justify-between items-center group hover:border-primary/50 transition-colors"
+                    >
+                      <div className="overflow-hidden mr-3">
+                        <p className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-0.5">
+                          {ci.type}
+                        </p>
+                        <p className="font-code-sm text-xs text-on-surface truncate max-w-[220px] sm:max-w-[280px]">
+                          {ci.target}
+                        </p>
+                      </div>
+                      <div
+                        className={`flex items-center space-x-2 px-2.5 py-1 rounded border shrink-0 ${
+                          ci.statusText
+                            ? "bg-surface-container/60 text-on-surface-variant border-outline-variant/40"
+                            : ci.severity === "critical"
+                            ? "bg-error/10 text-error border-error/20"
+                            : ci.severity === "high"
+                            ? "bg-tertiary-container/10 text-tertiary-container border-tertiary-container/20"
+                            : "bg-primary/10 text-primary border-primary/20"
+                        }`}
+                      >
+                        <Icon name={ci.statusText ? "schedule" : ci.severity === "safe" ? "check" : "flag"} className="text-xs" />
+                        <span className="font-code-sm text-xs font-semibold">
+                          {ci.statusText || (ci.reportCount !== undefined ? `${ci.reportCount} Reports` : "Not indexed")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              ) : (
+                <div className="py-6 px-4 rounded border border-dashed border-outline-variant/40 bg-[#0C0E12] text-center space-y-1.5 my-auto">
+                  <Icon name="groups" className="text-on-surface-variant text-2xl mx-auto opacity-50" />
+                  <p className="font-code-sm text-xs font-semibold text-on-surface">
+                    Community telemetry unavailable
+                  </p>
+                  <p className="text-[11px] font-code-sm text-on-surface-variant/70 max-w-sm mx-auto">
+                    Indicator has not yet been indexed across decentralized community reporting nodes.
+                  </p>
+                </div>
+              )}
 
               {/* Pipeline Timing Telemetry if available from real backend */}
               {scan.timing && (

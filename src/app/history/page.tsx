@@ -20,29 +20,36 @@ export default function ScanHistoryPage() {
   const [statusFilter, setStatusFilter] = useState("Status: All");
   const [modalityFilter, setModalityFilter] = useState("Modality: All");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await scanService.getScans({
+        search,
+        status: statusFilter,
+        modality: modalityFilter,
+        page,
+        pageSize: 10,
+      });
+      setScans(res.data);
+      setTotal(res.total);
+      setTotalPages(res.totalPages);
+    } catch (err) {
+      console.error("Failed to load scans", err);
+      setError("Scan history unavailable");
+      setScans([]);
+      setTotal(0);
+      setTotalPages(1);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, statusFilter, modalityFilter, page]);
 
   useEffect(() => {
-    async function loadData() {
-      setLoading(true);
-      try {
-        const res = await scanService.getScans({
-          search,
-          status: statusFilter,
-          modality: modalityFilter,
-          page,
-          pageSize: 10,
-        });
-        setScans(res.data);
-        setTotal(res.total);
-        setTotalPages(res.totalPages);
-      } catch (err) {
-        console.error("Failed to load scans", err);
-      } finally {
-        setLoading(false);
-      }
-    }
     loadData();
-  }, [search, statusFilter, modalityFilter, page]);
+  }, [loadData]);
 
   return (
     <div className="space-y-stack-md">
@@ -171,10 +178,42 @@ export default function ScanHistoryPage() {
                     Loading threat logs...
                   </td>
                 </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-on-surface-variant font-code-sm">
+                    <div className="space-y-2 max-w-sm mx-auto">
+                      <Icon name="error_outline" className="text-error text-3xl mx-auto opacity-70" />
+                      <p className="font-code-sm text-sm text-error font-semibold">
+                        Scan history unavailable
+                      </p>
+                      <p className="text-xs text-on-surface-variant/70">
+                        Unable to connect to the forensic telemetry logs.
+                      </p>
+                      <button
+                        onClick={() => loadData()}
+                        className="mt-2 px-3 py-1.5 bg-[#1C2128] border border-[#30363D] hover:border-outline-variant text-on-surface rounded text-xs font-label-caps uppercase transition-colors"
+                      >
+                        Retry Connection
+                      </button>
+                    </div>
+                  </td>
+                </tr>
               ) : scans.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-12 text-center text-on-surface-variant font-code-sm">
-                    No scans matching the selected criteria.
+                    <div className="space-y-1 max-w-sm mx-auto">
+                      <Icon name="search_off" className="text-3xl mx-auto opacity-40 mb-1" />
+                      <p className="font-code-sm text-xs text-on-surface font-semibold">
+                        {search || statusFilter !== "Status: All" || modalityFilter !== "Modality: All"
+                          ? "No scans matching the selected criteria."
+                          : "No scans recorded yet"}
+                      </p>
+                      <p className="text-[11px] font-code-sm text-on-surface-variant/70">
+                        {search || statusFilter !== "Status: All" || modalityFilter !== "Modality: All"
+                          ? "Try adjusting your filters or search terms."
+                          : "Completed scans from web and Telegram will appear here."}
+                      </p>
+                    </div>
                   </td>
                 </tr>
               ) : (
@@ -188,13 +227,17 @@ export default function ScanHistoryPage() {
                   else if (scan.modality === "email") modIcon = "mail";
                   else if (scan.modality === "wallet") modIcon = "account_balance_wallet";
 
+                  const formattedTime = scan.timestamp
+                    ? scan.timestamp.replace("T", " ").replace(/\.\d+.*$/, "")
+                    : "Recently";
+
                   return (
                     <tr
                       key={scan.id}
                       className="hover:bg-[#1C2128] transition-colors cursor-pointer group"
                     >
                       <td className="py-3 px-4 font-code-sm text-xs text-on-surface-variant whitespace-nowrap">
-                        {scan.timestamp}
+                        {formattedTime}
                       </td>
                       <td className="py-3 px-4">
                         <Link

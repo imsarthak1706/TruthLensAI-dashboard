@@ -28,61 +28,183 @@ export interface IScanService {
 
 // In-memory session store for live scan results
 const inMemoryScans = new Map<string, ScanResult>();
+const STORAGE_SCANS_KEY = "truthlens_scans_list";
+
+function getStoredScans(): ScanItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(STORAGE_SCANS_KEY);
+    if (raw) {
+      return JSON.parse(raw);
+    }
+  } catch (_) {}
+  return [];
+}
+
+function saveStoredScan(item: ScanItem) {
+  if (typeof window === "undefined") return;
+  try {
+    const existing = getStoredScans();
+    const filtered = existing.filter((s) => s.id !== item.id);
+    filtered.unshift(item);
+    window.localStorage.setItem(STORAGE_SCANS_KEY, JSON.stringify(filtered.slice(0, 50)));
+  } catch (_) {}
+}
 
 class CentralizedScanService implements IScanService {
   async getOverviewKpis(): Promise<OverviewKpis> {
-    await new Promise((res) => setTimeout(res, 20));
-    return MOCK_OVERVIEW_KPIS;
+    try {
+      const telemetry = await apiClient.getOverviewTelemetry();
+      return {
+        totalScans: telemetry.total_scans,
+        totalScansLabel: telemetry.total_scans.toString(),
+        totalScansTrend: "",
+        threatsDetected: telemetry.threats_detected,
+        threatsTrend: "",
+        criticalThreats: telemetry.critical_threats,
+        criticalThreatsTrend: "",
+        communityReports: telemetry.community_reports_indexed,
+        communityReportsLabel: telemetry.community_reports_indexed.toString(),
+        communityReportsTrend: "",
+        detectionConfidence: 0,
+        avgResponseTime: "N/A",
+        avgResponseTimeTrend: "",
+      };
+    } catch (err) {
+      console.warn("Telemetry overview API unavailable, using local scan telemetry:", err);
+      const scans = getStoredScans();
+      const threats = scans.filter((s) => s.riskScore >= 40 || s.severity === "critical" || s.severity === "high" || s.severity === "suspicious");
+      const criticals = scans.filter((s) => s.severity === "critical" || s.riskScore >= 80);
+
+      return {
+        totalScans: scans.length,
+        totalScansLabel: scans.length > 0 ? scans.length.toString() : "0",
+        totalScansTrend: "",
+        threatsDetected: threats.length,
+        threatsTrend: "",
+        criticalThreats: criticals.length,
+        criticalThreatsTrend: "",
+        communityReports: 0,
+        communityReportsLabel: "0",
+        communityReportsTrend: "",
+        detectionConfidence: 0,
+        avgResponseTime: "N/A",
+        avgResponseTimeTrend: "",
+      };
+    }
   }
 
   async getSeverityDistribution(): Promise<SeverityDistributionData> {
-    await new Promise((res) => setTimeout(res, 20));
-    return MOCK_SEVERITY_DISTRIBUTION;
+    try {
+      const telemetry = await apiClient.getOverviewTelemetry();
+      if (telemetry.severity_distribution && telemetry.severity_distribution.total !== undefined) {
+        return telemetry.severity_distribution;
+      }
+    } catch (_) {}
+
+    const scans = getStoredScans();
+    const critical = scans.filter((s) => s.severity === "critical").length;
+    const high = scans.filter((s) => s.severity === "high").length;
+    const suspicious = scans.filter((s) => s.severity === "suspicious").length;
+    const safe = scans.filter((s) => s.severity === "safe").length;
+
+    return {
+      critical,
+      high,
+      suspicious,
+      safe,
+      total: scans.length,
+    };
   }
 
   async getThreatActivity(timeframe: "7D" | "30D" | "90D"): Promise<{ time: string; threats: number; clean: number }[]> {
-    await new Promise((res) => setTimeout(res, 20));
-    return MOCK_THREAT_ACTIVITY_SERIES[timeframe] || MOCK_THREAT_ACTIVITY_SERIES["30D"];
+    try {
+      const telemetry = await apiClient.getOverviewTelemetry();
+      if (telemetry.threat_activity && Array.isArray(telemetry.threat_activity) && telemetry.threat_activity.length > 0) {
+        return telemetry.threat_activity;
+      }
+    } catch (_) {}
+
+    const scans = getStoredScans();
+    if (scans.length < 2) {
+      return [];
+    }
+
+    const pointsMap = new Map<string, { threats: number; clean: number }>();
+    scans.forEach((s) => {
+      const dateStr = (s.timestamp || "").split(" ")[0] || "Today";
+      const existing = pointsMap.get(dateStr) || { threats: 0, clean: 0 };
+      if (s.riskScore >= 40 || s.severity === "critical" || s.severity === "high") {
+        existing.threats += 1;
+      } else {
+        existing.clean += 1;
+      }
+      pointsMap.set(dateStr, existing);
+    });
+
+    return Array.from(pointsMap.entries()).map(([time, val]) => ({
+      time,
+      threats: val.threats,
+      clean: val.clean,
+    }));
   }
 
   async getRecentScans(limit = 5): Promise<ScanItem[]> {
     await new Promise((res) => setTimeout(res, 20));
-    return MOCK_SCANS_LIST.slice(0, limit);
+    return getStoredScans().slice(0, limit);
   }
 
   async getScans(filters: ScanFilters = {}): Promise<{ data: ScanItem[]; total: number; page: number; totalPages: number }> {
-    await new Promise((res) => setTimeout(res, 40));
-    let result = [...MOCK_SCANS_LIST];
-
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(
-        (s) =>
-          s.targetInput.toLowerCase().includes(q) ||
-          s.id.toLowerCase().includes(q) ||
-          (s.threatType && s.threatType.toLowerCase().includes(q))
-      );
-    }
-
-    if (filters.status && filters.status !== "Status: All") {
-      result = result.filter((s) => s.severity.toLowerCase() === filters.status?.toLowerCase());
-    }
-
-    if (filters.modality && filters.modality !== "Modality: All") {
-      result = result.filter((s) => s.modality.toLowerCase() === filters.modality?.toLowerCase());
-    }
-
     const page = filters.page || 1;
     const pageSize = filters.pageSize || 10;
-    const start = (page - 1) * pageSize;
-    const paginated = result.slice(start, start + pageSize);
+    const offset = (page - 1) * pageSize;
 
-    return {
-      data: paginated,
-      total: result.length,
-      page,
-      totalPages: Math.ceil(result.length / pageSize) || 1,
-    };
+    try {
+      const res = await apiClient.getScans(pageSize, offset);
+      let items: ScanItem[] = (res.items || []).map((item) => ({
+        id: item.id,
+        timestamp: item.timestamp,
+        targetInput: item.target_input,
+        modality: (item.modality as any) || "text",
+        riskScore: item.risk_score,
+        severity: (item.severity as any) || "safe",
+        status: (item.status as any) || "complete",
+        threatType: item.threat_type || item.verdict || "Forensic Analysis",
+        confidence: undefined,
+      }));
+
+      // Apply client-side search/filters on current page results if active
+      if (filters.search) {
+        const q = filters.search.toLowerCase();
+        items = items.filter(
+          (s) =>
+            s.targetInput.toLowerCase().includes(q) ||
+            s.id.toLowerCase().includes(q) ||
+            (s.threatType && s.threatType.toLowerCase().includes(q))
+        );
+      }
+
+      if (filters.status && filters.status !== "Status: All") {
+        items = items.filter((s) => s.severity.toLowerCase() === filters.status?.toLowerCase());
+      }
+
+      if (filters.modality && filters.modality !== "Modality: All") {
+        items = items.filter((s) => s.modality.toLowerCase() === filters.modality?.toLowerCase());
+      }
+
+      const total = res.total;
+      const totalPages = Math.ceil(total / pageSize) || 1;
+
+      return {
+        data: items,
+        total,
+        page,
+        totalPages,
+      };
+    } catch (err) {
+      console.warn("Could not load scans from backend /api/scans:", err);
+      throw err;
+    }
   }
 
   async getScanById(id: string): Promise<ScanResult | null> {
@@ -135,33 +257,26 @@ class CentralizedScanService implements IScanService {
               window.sessionStorage.setItem(`tl_scan_${normalized.id}`, JSON.stringify(normalized));
             } catch (_) {}
           }
+          saveStoredScan({
+            id: normalized.id,
+            timestamp: normalized.timestamp || "Just now",
+            targetInput: (normalized.targetInput || "Target Payload").slice(0, 50),
+            modality: normalized.modality,
+            riskScore: normalized.riskScore,
+            severity: normalized.severity,
+            status: "complete",
+            threatType: normalized.headline,
+            confidence: normalized.confidence,
+          });
           return normalized;
         }
-      } catch (_) {
-        // Backend 404 or network issue; fall through to mock check
+      } catch (err) {
+        console.warn(`Could not load scan ${id} from live backend:`, err);
       }
     }
 
-    // 4. Fallback for demo static records if directly navigated by mock ID
-    if (id === MOCK_PRIMARY_SCAN_RESULT.id || id === "demo" || !id) {
-      return MOCK_PRIMARY_SCAN_RESULT;
-    }
-
-    const found = MOCK_SCANS_LIST.find((s) => s.id === id);
-    if (found) {
-      return {
-        ...MOCK_PRIMARY_SCAN_RESULT,
-        id: found.id,
-        targetInput: found.targetInput,
-        modality: found.modality,
-        riskScore: found.riskScore,
-        severity: found.severity,
-        confidence: found.confidence || 95,
-        headline: `${found.threatType || "Threat"} Detected`,
-      };
-    }
-
-    return MOCK_PRIMARY_SCAN_RESULT;
+    // 4. Return null if scan is not found in backend or local session
+    return null;
   }
 
   async createScan(
@@ -215,10 +330,10 @@ class CentralizedScanService implements IScanService {
       } catch (_) {}
     }
 
-    // Prepend to recent scans list
+    // Save to persistent user scans
     const newScanItem: ScanItem = {
       id: normalizedResult.id,
-      timestamp: "Just now",
+      timestamp: normalizedResult.timestamp || "Just now",
       targetInput: originalInput.slice(0, 50),
       modality: modality as any,
       riskScore: normalizedResult.riskScore,
@@ -227,7 +342,7 @@ class CentralizedScanService implements IScanService {
       threatType: backendResponse.threat_type || `${modality.toUpperCase()} Forensics`,
       confidence: normalizedResult.confidence,
     };
-    MOCK_SCANS_LIST.unshift(newScanItem);
+    saveStoredScan(newScanItem);
 
     return normalizedResult;
   }

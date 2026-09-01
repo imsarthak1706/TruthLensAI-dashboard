@@ -7,11 +7,19 @@ interface VirusTotalRatioChartProps {
 }
 
 export function VirusTotalRatioChart({
-  malicious = 12,
-  suspicious = 2,
-  harmless = 60,
+  malicious = 0,
+  suspicious = 0,
+  harmless = 0,
 }: VirusTotalRatioChartProps) {
-  const total = malicious + suspicious + harmless || 1;
+  const total = malicious + suspicious + harmless;
+  if (total === 0) {
+    return (
+      <div className="relative w-16 h-16 rounded-full border-4 border-surface-container-highest overflow-hidden shrink-0 bg-[#0C0E12] flex items-center justify-center">
+        <span className="text-[9px] font-code-sm text-on-surface-variant">N/A</span>
+      </div>
+    );
+  }
+
   const malPct = (malicious / total) * 100;
   const suspPct = (suspicious / total) * 100;
   const stop1 = malPct;

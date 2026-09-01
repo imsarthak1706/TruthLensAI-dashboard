@@ -1,6 +1,7 @@
 import {
   CommunityReputationItem,
   EvidenceItem,
+  ExternalIntelSummary,
   MetricBreakdown,
   ModalityType,
   ScanResult,
@@ -268,132 +269,44 @@ export function normalizeBackendScanResponse(
     }
   }
 
-  // 6. Normalize AI breakdown bars
+  // 6. Normalize AI breakdown dimensions (only from real backend ai_analysis)
   const breakdown: MetricBreakdown[] = [];
   if (backend.ai_analysis) {
     if (backend.ai_analysis.scam_intent !== undefined) {
       breakdown.push({
         name: "Scam Intent",
-        score: backend.ai_analysis.scam_intent ? 94 : 5,
-        category: "critical",
+        statusText: backend.ai_analysis.scam_intent ? "Flagged" : "Clean",
+        category: backend.ai_analysis.scam_intent ? "critical" : "info",
       });
     }
     if (backend.ai_analysis.social_engineering !== undefined) {
       breakdown.push({
         name: "Social Engineering",
-        score: backend.ai_analysis.social_engineering ? 88 : 5,
-        category: "critical",
+        statusText: backend.ai_analysis.social_engineering ? "Flagged" : "Clean",
+        category: backend.ai_analysis.social_engineering ? "critical" : "info",
       });
     }
     if (backend.ai_analysis.impersonation !== undefined) {
       breakdown.push({
         name: "Brand Impersonation",
-        score: backend.ai_analysis.impersonation ? 96 : 5,
-        category: "critical",
+        statusText: backend.ai_analysis.impersonation ? "Flagged" : "Clean",
+        category: backend.ai_analysis.impersonation ? "critical" : "info",
       });
     }
     if (backend.ai_analysis.financial_manipulation !== undefined) {
       breakdown.push({
         name: "Financial Manipulation",
-        score: backend.ai_analysis.financial_manipulation ? 92 : 5,
-        category: "critical",
+        statusText: backend.ai_analysis.financial_manipulation ? "Flagged" : "Clean",
+        category: backend.ai_analysis.financial_manipulation ? "critical" : "info",
       });
     }
-  }
-
-  if (breakdown.length === 0) {
-    if (modality === "image") {
-      breakdown.push(
-        {
-          name: "OCR Scam Probability",
-          score: riskScore >= 80 ? 92 : riskScore >= 40 ? 55 : 0,
-          category: "critical",
-        },
-        {
-          name: "Visual Manipulation",
-          score: riskScore >= 70 ? 78 : 0,
-          category: "critical",
-        },
-        {
-          name: "Brand Impersonation",
-          score: riskScore >= 80 ? 95 : 0,
-          category: "critical",
-        },
-        {
-          name: "Metadata Anomaly",
-          score: backend.image_forensics?.exif?.available ? 15 : 0,
-          category: "info",
-        }
-      );
-    } else if (modality === "audio") {
-      breakdown.push(
-        {
-          name: "Voice Cloning Probability",
-          score: riskScore >= 80 ? 90 : 0,
-          category: "critical",
-        },
-        {
-          name: "Speech Scam Intent",
-          score: riskScore >= 80 ? 94 : riskScore >= 40 ? 55 : 0,
-          category: "critical",
-        },
-        {
-          name: "Social Engineering",
-          score: riskScore >= 80 ? 88 : 0,
-          category: "critical",
-        },
-        {
-          name: "Acoustic Noise Anomaly",
-          score: 0,
-          category: "info",
-        }
-      );
-    } else if (modality === "video") {
-      breakdown.push(
-        {
-          name: "Deepfake Visual Artifacts",
-          score: riskScore >= 80 ? 92 : 0,
-          category: "critical",
-        },
-        {
-          name: "Audio-Visual Sync",
-          score: riskScore >= 80 ? 85 : 0,
-          category: "critical",
-        },
-        {
-          name: "On-Screen Phishing Text",
-          score: riskScore >= 80 ? 95 : riskScore >= 40 ? 50 : 0,
-          category: "critical",
-        },
-        {
-          name: "Container Metadata",
-          score: 0,
-          category: "info",
-        }
-      );
-    } else {
-      breakdown.push(
-        {
-          name: "Scam Intent",
-          score: riskScore >= 80 ? 94 : riskScore >= 50 ? 65 : 5,
-          category: "critical",
-        },
-        {
-          name: "Social Engineering",
-          score: riskScore >= 80 ? 88 : riskScore >= 50 ? 55 : 5,
-          category: "critical",
-        },
-        {
-          name: "Brand Impersonation",
-          score: riskScore >= 80 ? 95 : 5,
-          category: "critical",
-        },
-        {
-          name: "Urgency / Pressure",
-          score: riskScore >= 80 ? 92 : 5,
-          category: "critical",
-        }
-      );
+    if (backend.ai_analysis.urgency) {
+      const urgencyUpper = String(backend.ai_analysis.urgency).toUpperCase();
+      breakdown.push({
+        name: "Urgency Pressure",
+        statusText: urgencyUpper,
+        category: urgencyUpper === "HIGH" ? "critical" : urgencyUpper === "MEDIUM" ? "warning" : "info",
+      });
     }
   }
 
@@ -403,19 +316,19 @@ export function normalizeBackendScanResponse(
     aiExplanation = backend.ai_analysis.explanation;
   } else if (modality === "image") {
     aiExplanation = backend.extracted_text
-      ? `OCR extracted text: "${backend.extracted_text}". Evaluated across neural scam classifiers.`
+      ? `OCR extracted text: "${backend.extracted_text}". Evaluated across threat models.`
       : (backend.ocr_status || "Image forensic metadata and structural compression checks completed.");
   } else if (modality === "audio") {
     aiExplanation = backend.transcript
-      ? `Whisper transcribed speech: "${backend.transcript}". Evaluated across neural scam classifiers.`
+      ? `Whisper transcribed speech: "${backend.transcript}". Evaluated across threat models.`
       : "Audio signal spectral structure analyzed. No usable speech transcript detected.";
   } else if (modality === "video") {
     if (backend.transcript && backend.frame_ocr_text) {
-      aiExplanation = `Transcribed speech ("${backend.transcript.slice(0, 50)}...") and on-screen text ("${backend.frame_ocr_text.slice(0, 50)}...") analyzed across neural threat models.`;
+      aiExplanation = `Transcribed speech ("${backend.transcript.slice(0, 50)}...") and on-screen text ("${backend.frame_ocr_text.slice(0, 50)}...") analyzed across threat models.`;
     } else if (backend.transcript) {
-      aiExplanation = `Video audio stream transcribed: "${backend.transcript}". Evaluated across neural scam classifiers.`;
+      aiExplanation = `Video audio stream transcribed: "${backend.transcript}". Evaluated across threat models.`;
     } else if (backend.frame_ocr_text) {
-      aiExplanation = `Video keyframe OCR extracted text: "${backend.frame_ocr_text}". Evaluated across neural scam classifiers.`;
+      aiExplanation = `Video keyframe OCR extracted text: "${backend.frame_ocr_text}". Evaluated across threat models.`;
     } else {
       aiExplanation = "Video keyframe visual structures, compression consistency, and audio track evaluated.";
     }
@@ -423,27 +336,33 @@ export function normalizeBackendScanResponse(
     aiExplanation = `Forensic examination completed for submitted ${modality} payload.`;
   }
 
-  // 8. Normalize VirusTotal
-  const vtFirst =
-    backend.virustotal && backend.virustotal.length > 0
-      ? backend.virustotal[0]
-      : null;
+  // 8. Normalize VirusTotal (only from real backend virustotal data)
+  const vtList = backend.virustotal && backend.virustotal.length > 0 ? backend.virustotal : null;
+  const vtFirst = vtList ? vtList[0] : null;
 
-  const externalIntel = {
+  const hasRealVt = Boolean(
+    vtFirst &&
+    (vtFirst.malicious !== undefined ||
+     vtFirst.suspicious !== undefined ||
+     vtFirst.harmless !== undefined ||
+     vtFirst.undetected !== undefined)
+  );
+
+  const externalIntel: ExternalIntelSummary = {
     provider: "VirusTotal",
-    maliciousCount: vtFirst?.malicious ?? (riskScore >= 80 ? 1 : 0),
-    suspiciousCount: vtFirst?.suspicious ?? (riskScore >= 80 ? 3 : 0),
-    harmlessCount: vtFirst?.harmless ?? (riskScore >= 80 ? 54 : 68),
-    totalEngines:
-      vtFirst
-        ? (vtFirst.malicious || 0) +
-          (vtFirst.suspicious || 0) +
-          (vtFirst.harmless || 0) +
-          (vtFirst.undetected || 0) || 74
-        : 74,
+    available: hasRealVt,
+    maliciousCount: hasRealVt ? Number(vtFirst?.malicious || 0) : 0,
+    suspiciousCount: hasRealVt ? Number(vtFirst?.suspicious || 0) : 0,
+    harmlessCount: hasRealVt ? Number(vtFirst?.harmless || 0) : 0,
+    totalEngines: hasRealVt
+      ? (Number(vtFirst?.malicious || 0) +
+         Number(vtFirst?.suspicious || 0) +
+         Number(vtFirst?.harmless || 0) +
+         Number(vtFirst?.undetected || 0))
+      : 0,
   };
 
-  // 9. Normalize Community Intel
+  // 9. Normalize Community Intel (honest indexing status; never fabricate report counts)
   const communityIntel: CommunityReputationItem[] = [];
   const urls = backend.extracted_entities?.urls || [];
 
@@ -457,26 +376,18 @@ export function normalizeBackendScanResponse(
     communityIntel.push({
       type: "URL Reputation",
       target: urlTarget,
-      reportCount: riskScore >= 80 ? 104 : 12,
-      riskLabel: riskScore >= 80 ? "Critical" : "Safe",
-      severity: riskScore >= 80 ? "critical" : "safe",
+      statusText: "Not indexed",
+      severity: "safe",
     });
 
-    communityIntel.push({
-      type: "Domain Reputation",
-      target: domainTarget,
-      reportCount: riskScore >= 80 ? 15 : 2,
-      riskLabel: riskScore >= 80 ? "High Risk" : "Safe",
-      severity: riskScore >= 80 ? "high" : "safe",
-    });
-  } else {
-    communityIntel.push({
-      type: `${modality.toUpperCase()} File Telemetry`,
-      target: originalInput.slice(0, 45),
-      reportCount: riskScore >= 80 ? 18 : 0,
-      riskLabel: severity.toUpperCase(),
-      severity,
-    });
+    if (domainTarget && domainTarget !== urlTarget) {
+      communityIntel.push({
+        type: "Domain Reputation",
+        target: domainTarget,
+        statusText: "Not indexed",
+        severity: "safe",
+      });
+    }
   }
 
   // 10. Format timestamp

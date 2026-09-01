@@ -1,11 +1,17 @@
 import { BenchmarkMetrics, ModalityLatency, ModalityMetricCard, PerformanceTimePoint, ThreatDistribution } from "@/types/analytics";
 
 export const MOCK_BENCHMARK_METRICS: BenchmarkMetrics = {
-  accuracy: 96.67,
+  accuracy: 95.0,
   precision: 100.0,
-  recall: 93.33,
-  f1Score: 96.55,
+  recall: 90.0,
+  f1Score: 94.74,
   samplesCount: 120,
+  totalScam: 60,
+  totalBenign: 60,
+  tp: 54,
+  tn: 60,
+  fp: 0,
+  fn: 6,
 };
 
 export const MOCK_PERFORMANCE_POINTS: PerformanceTimePoint[] = [

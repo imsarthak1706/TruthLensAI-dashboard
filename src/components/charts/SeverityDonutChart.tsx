@@ -4,19 +4,55 @@ import React from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { SeverityDistributionData } from "@/types/scan";
 
+import { Icon } from "@/components/ui/Icon";
+
 interface SeverityDonutChartProps {
   data?: SeverityDistributionData;
 }
 
-export function SeverityDonutChart({
-  data = {
-    critical: 24,
-    high: 186,
-    suspicious: 632,
-    safe: 11558,
-    total: 12400,
-  },
-}: SeverityDonutChartProps) {
+export function SeverityDonutChart({ data }: SeverityDonutChartProps) {
+  if (!data || data.total === 0) {
+    return (
+      <div className="flex flex-col h-full justify-between">
+        <div>
+          <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-1">
+            Severity Distribution
+          </h3>
+          <p className="font-body-sm text-xs text-on-surface-variant">
+            Threat classification across active scans
+          </p>
+        </div>
+
+        <div className="relative w-full h-44 rounded border border-dashed border-outline-variant/30 bg-[#0C0E12] flex flex-col items-center justify-center p-4 text-center my-1">
+          <Icon name="pie_chart" className="text-on-surface-variant text-2xl opacity-40 mb-1" />
+          <p className="font-code-sm text-xs text-on-surface font-semibold">No scan telemetry</p>
+          <p className="font-code-sm text-[11px] text-on-surface-variant/70">
+            Awaiting completed scans to compute severity breakdown.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-label-caps text-label-caps text-xs pt-3 border-t border-surface-variant/40 text-on-surface-variant">
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-error/40 shrink-0" />
+            <span className="truncate">Critical (0)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-tertiary-container/40 shrink-0" />
+            <span className="truncate">High (0)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-[#f9a826]/40 shrink-0" />
+            <span className="truncate">Suspicious (0)</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-primary/40 shrink-0" />
+            <span className="truncate">Safe (0)</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const chartData = [
     { name: "Critical", value: data.critical, color: "#ffb4ab" },
     { name: "High Risk", value: data.high, color: "#e9638e" },
@@ -96,7 +132,7 @@ export function SeverityDonutChart({
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-full bg-primary shrink-0" />
-          <span className="truncate">Safe ({(data.safe / 1000).toFixed(1)}k)</span>
+          <span className="truncate">Safe ({data.safe})</span>
         </div>
       </div>
     </div>

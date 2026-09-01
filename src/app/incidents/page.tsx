@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { SlideOver } from "@/components/ui/SlideOver";
+import { Pagination } from "@/components/ui/Pagination";
 
 function IncidentCenterContent() {
   const searchParams = useSearchParams();
@@ -21,29 +22,41 @@ function IncidentCenterContent() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [kpiData, items] = await Promise.all([
-          incidentService.getKpis(),
-          incidentService.getIncidents(),
-        ]);
-        setKpis(kpiData);
-        setIncidents(items);
+  const loadData = React.useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [kpiData, items] = await Promise.all([
+        incidentService.getKpis(),
+        incidentService.getIncidents(),
+      ]);
+      setKpis(kpiData);
+      setIncidents(items);
 
-        // Open the URL selectedId if present, otherwise fallback to first item
-        const targetId = selectedIdFromUrl || items[0]?.id || "INC-4092";
+      const targetId = selectedIdFromUrl || items[0]?.id;
+      if (targetId) {
         const detail = await incidentService.getIncidentById(targetId);
         setSelectedIncident(detail);
-      } catch (err) {
-        console.error("Failed to load incidents", err);
-      } finally {
-        setLoading(false);
+      } else {
+        setSelectedIncident(null);
       }
+    } catch (err) {
+      console.error("Failed to load incidents", err);
+      setError("Incident telemetry unavailable");
+      setIncidents([]);
+      setSelectedIncident(null);
+    } finally {
+      setLoading(false);
     }
-    load();
   }, [selectedIdFromUrl]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   const handleSelectIncident = async (id: string) => {
     try {
@@ -74,6 +87,9 @@ function IncidentCenterContent() {
     return matchSearch && matchStatus;
   });
 
+  const totalPages = Math.ceil(filteredIncidents.length / pageSize) || 1;
+  const pagedIncidents = filteredIncidents.slice((page - 1) * pageSize, page * pageSize);
+
   return (
     <div className="space-y-stack-lg max-w-7xl mx-auto">
       {/* Header */}
@@ -96,71 +112,74 @@ function IncidentCenterContent() {
       {/* Summary KPI Cards (Bento Grid) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {/* Total Incidents */}
-        <Card className="p-5 flex flex-col gap-3 relative overflow-hidden group">
+        <Card className="p-5 flex flex-col justify-between h-28 relative overflow-hidden group">
           <div className="flex items-center justify-between z-10">
             <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
               Total Incidents
             </span>
             <Icon name="list_alt" className="text-primary text-xl" />
           </div>
-          <div className="font-display-lg text-display-lg text-on-surface z-10">
-            {kpis?.total || 42}
-          </div>
-          <div className="flex items-center gap-1 text-xs text-primary z-10 font-code-sm">
-            <Icon name="trending_up" className="text-[14px]" />
-            +{kpis?.weeklyChangePercent || 12}%{" "}
-            <span className="text-on-surface-variant ml-1">vs last week</span>
+          <div className="flex flex-col mt-auto z-10">
+            <span className="font-display-lg text-display-lg text-on-surface font-bold">
+              {loading ? "..." : (kpis?.total ?? 0)}
+            </span>
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              {kpis && kpis.total > 0 ? "Indexed incidents" : "No live incident telemetry"}
+            </span>
           </div>
         </Card>
 
         {/* Critical */}
-        <Card className="p-5 flex flex-col gap-3 relative overflow-hidden group border-error/40 shadow-[0_0_15px_rgba(255,180,171,0.08)]">
+        <Card className="p-5 flex flex-col justify-between h-28 relative overflow-hidden group border-error/40 shadow-[0_0_15px_rgba(255,180,171,0.08)]">
           <div className="flex items-center justify-between z-10">
             <span className="font-label-caps text-label-caps text-error uppercase tracking-wider font-bold">
               Critical
             </span>
             <Icon name="warning" className="text-error text-xl" />
           </div>
-          <div className="font-display-lg text-display-lg text-error z-10 font-bold">
-            {kpis?.critical || 8}
-          </div>
-          <div className="flex items-center gap-1.5 text-xs text-error z-10 font-code-sm font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-error animate-pulse" />
-            Action Required
+          <div className="flex flex-col mt-auto z-10">
+            <span className="font-display-lg text-display-lg text-error font-bold">
+              {loading ? "..." : (kpis?.critical ?? 0)}
+            </span>
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              {kpis && kpis.critical > 0 ? "Action Required" : "No critical threats"}
+            </span>
           </div>
         </Card>
 
         {/* Investigating */}
-        <Card className="p-5 flex flex-col gap-3 relative overflow-hidden group">
+        <Card className="p-5 flex flex-col justify-between h-28 relative overflow-hidden group">
           <div className="flex items-center justify-between z-10">
             <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
               Investigating
             </span>
             <Icon name="search" className="text-tertiary text-xl" />
           </div>
-          <div className="font-display-lg text-display-lg text-on-surface z-10">
-            {kpis?.investigating || 15}
-          </div>
-          <div className="flex items-center gap-1 text-xs text-on-surface-variant z-10 font-code-sm">
-            Active Triage
+          <div className="flex flex-col mt-auto z-10">
+            <span className="font-display-lg text-display-lg text-on-surface font-bold">
+              {loading ? "..." : (kpis?.investigating ?? 0)}
+            </span>
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              {kpis && kpis.investigating > 0 ? "Active Triage" : "Queue clear"}
+            </span>
           </div>
         </Card>
 
         {/* Resolved */}
-        <Card className="p-5 flex flex-col gap-3 relative overflow-hidden group">
+        <Card className="p-5 flex flex-col justify-between h-28 relative overflow-hidden group">
           <div className="flex items-center justify-between z-10">
             <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
               Resolved
             </span>
             <Icon name="check_circle" className="text-secondary text-xl" />
           </div>
-          <div className="font-display-lg text-display-lg text-on-surface z-10">
-            {kpis?.resolved || 19}
-          </div>
-          <div className="flex items-center gap-1 text-xs text-primary z-10 font-code-sm">
-            <Icon name="trending_up" className="text-[14px]" />
-            +{kpis?.resolutionRateChangePercent || 5}%{" "}
-            <span className="text-on-surface-variant ml-1">close rate</span>
+          <div className="flex flex-col mt-auto z-10">
+            <span className="font-display-lg text-display-lg text-on-surface font-bold">
+              {loading ? "..." : (kpis?.resolved ?? 0)}
+            </span>
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              {kpis && kpis.resolved > 0 ? "Resolved incidents" : "No closed records"}
+            </span>
           </div>
         </Card>
       </div>
@@ -182,7 +201,10 @@ function IncidentCenterContent() {
               {(["all", "open", "investigating", "resolved"] as const).map((st) => (
                 <button
                   key={st}
-                  onClick={() => setStatusFilter(st)}
+                  onClick={() => {
+                    setStatusFilter(st);
+                    setPage(1);
+                  }}
                   className={`px-3 py-1 text-xs font-code-sm rounded transition-colors uppercase ${
                     statusFilter === st
                       ? "bg-surface-container-high border border-primary/50 text-primary font-bold"
@@ -203,7 +225,10 @@ function IncidentCenterContent() {
                 type="text"
                 placeholder="Search ID or Keyword..."
                 value={search}
-                onChange={(e) => setSearch(e.target.value)}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
                 className="w-full bg-[#0A0C10] border border-[#30363D] rounded py-1.5 pl-9 pr-3 text-sm font-code-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
               />
             </div>
@@ -236,44 +261,102 @@ function IncidentCenterContent() {
                   </tr>
                 </thead>
                 <tbody className="font-body-sm divide-y divide-[#30363D]/30">
-                  {filteredIncidents.map((inc) => {
-                    const isSelected = selectedIncident?.id === inc.id;
-                    return (
-                      <tr
-                        key={inc.id}
-                        onClick={() => handleSelectIncident(inc.id)}
-                        className={`transition-colors cursor-pointer group ${
-                          isSelected
-                            ? "bg-primary/10 border-l-2 border-primary"
-                            : "hover:bg-[#1C2128]"
-                        }`}
-                      >
-                        <td className="py-3.5 px-4 font-code-sm text-primary font-bold group-hover:underline">
-                          {inc.id}
-                        </td>
-                        <td className="py-3.5 px-4 font-code-sm text-xs text-on-surface-variant whitespace-nowrap">
-                          {inc.timestamp}
-                        </td>
-                        <td className="py-3.5 px-4 text-on-surface font-medium text-xs sm:text-sm">
-                          {inc.threatType}
-                        </td>
-                        <td className="py-3.5 px-4 text-on-surface-variant font-code-sm text-xs">
-                          {inc.platform}
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <Badge variant={inc.severity} glow={inc.severity === "critical"}>
-                            {inc.severity}
-                          </Badge>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <Badge variant={inc.status}>{inc.status}</Badge>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {loading ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-on-surface-variant font-code-sm">
+                        <span className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin inline-block mr-2" />
+                        Loading incident logs...
+                      </td>
+                    </tr>
+                  ) : error ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-on-surface-variant font-code-sm">
+                        <div className="space-y-2 max-w-sm mx-auto">
+                          <Icon name="error_outline" className="text-error text-3xl mx-auto opacity-70" />
+                          <p className="font-code-sm text-sm text-error font-semibold">
+                            Incident telemetry unavailable
+                          </p>
+                          <p className="text-xs text-on-surface-variant/70">
+                            Unable to connect to the incident database.
+                          </p>
+                          <button
+                            onClick={() => loadData()}
+                            className="mt-2 px-3 py-1.5 bg-[#1C2128] border border-[#30363D] hover:border-outline-variant text-on-surface rounded text-xs font-label-caps uppercase transition-colors"
+                          >
+                            Retry Connection
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredIncidents.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-on-surface-variant font-code-sm">
+                        <div className="space-y-1 max-w-sm mx-auto">
+                          <Icon name="verified_user" className="text-3xl mx-auto opacity-40 mb-1" />
+                          <p className="font-code-sm text-xs text-on-surface font-semibold">
+                            {search || statusFilter !== "all"
+                              ? "No incidents matching the selected criteria."
+                              : "No incidents recorded"}
+                          </p>
+                          <p className="text-[11px] font-code-sm text-on-surface-variant/70">
+                            {search || statusFilter !== "all"
+                              ? "Try adjusting your search terms or filter."
+                              : "Escalated threats and reported incidents will appear here."}
+                          </p>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    pagedIncidents.map((inc) => {
+                      const isSelected = selectedIncident?.id === inc.id;
+                      return (
+                        <tr
+                          key={inc.id}
+                          onClick={() => handleSelectIncident(inc.id)}
+                          className={`transition-colors cursor-pointer group ${
+                            isSelected
+                              ? "bg-primary/10 border-l-2 border-primary"
+                              : "hover:bg-[#1C2128]"
+                          }`}
+                        >
+                          <td className="py-3.5 px-4 font-code-sm text-primary font-bold group-hover:underline">
+                            {inc.id}
+                          </td>
+                          <td className="py-3.5 px-4 font-code-sm text-xs text-on-surface-variant whitespace-nowrap">
+                            {inc.timestamp}
+                          </td>
+                          <td className="py-3.5 px-4 text-on-surface font-medium text-xs sm:text-sm">
+                            {inc.threatType}
+                          </td>
+                          <td className="py-3.5 px-4 text-on-surface-variant font-code-sm text-xs">
+                            {inc.platform}
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <Badge variant={inc.severity} glow={inc.severity === "critical"}>
+                              {inc.severity}
+                            </Badge>
+                          </td>
+                          <td className="py-3.5 px-4">
+                            <Badge variant={inc.status}>{inc.status}</Badge>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
+
+            {filteredIncidents.length > pageSize && (
+              <div className="p-3 border-t border-[#30363D]">
+                <Pagination
+                  currentPage={page}
+                  totalPages={totalPages}
+                  totalEntries={filteredIncidents.length}
+                  onPageChange={(p) => setPage(p)}
+                />
+              </div>
+            )}
           </div>
         </div>
 

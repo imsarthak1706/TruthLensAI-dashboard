@@ -1,6 +1,6 @@
 import { IncidentArtifact, IncidentDetail, IncidentItem, IncidentKpis, IncidentSeverity } from "@/types/incident";
 import { ScanResult } from "@/types/scan";
-import { MOCK_INCIDENT_DETAIL_INC4092, MOCK_INCIDENT_KPIS, MOCK_INCIDENTS_LIST } from "./mock/mockIncidents";
+import { apiClient } from "./api/apiClient";
 
 export interface IIncidentService {
   getKpis(): Promise<IncidentKpis>;
@@ -10,12 +10,9 @@ export interface IIncidentService {
   createIncidentFromScan(scan: ScanResult): Promise<IncidentDetail>;
 }
 
-// In-memory cache
-let inMemoryIncidents: IncidentItem[] = [...MOCK_INCIDENTS_LIST];
+// In-memory cache for runtime sessions and created incidents
+let inMemoryIncidents: IncidentItem[] = [];
 const inMemoryDetails = new Map<string, IncidentDetail>();
-
-// Preload mock detail
-inMemoryDetails.set("INC-4092", MOCK_INCIDENT_DETAIL_INC4092);
 
 const STORAGE_INCIDENTS_KEY = "truthlens_incidents_list";
 const STORAGE_INCIDENT_PREFIX = "truthlens_incident_detail_";
@@ -26,14 +23,7 @@ function getStoredIncidents(): IncidentItem[] {
     const raw = window.localStorage.getItem(STORAGE_INCIDENTS_KEY);
     if (raw) {
       const parsed: IncidentItem[] = JSON.parse(raw);
-      // Merge unique
-      const existingIds = new Set(inMemoryIncidents.map((i) => i.id));
-      parsed.forEach((item) => {
-        if (!existingIds.has(item.id)) {
-          inMemoryIncidents.unshift(item);
-          existingIds.add(item.id);
-        }
-      });
+      return parsed;
     }
   } catch (_) {}
   return inMemoryIncidents;
@@ -50,30 +40,67 @@ function saveStoredIncidents(list: IncidentItem[]) {
 
 class CentralizedIncidentService implements IIncidentService {
   async getKpis(): Promise<IncidentKpis> {
-    await new Promise((r) => setTimeout(r, 40));
-    const items = getStoredIncidents();
-    const criticalCount = items.filter((i) => i.severity === "critical").length;
-    const investigatingCount = items.filter((i) => i.status === "investigating").length;
-    const resolvedCount = items.filter((i) => i.status === "resolved").length;
+    try {
+      const items = await this.getIncidents();
+      const criticalCount = items.filter((i) => i.severity === "critical").length;
+      const investigatingCount = items.filter((i) => i.status === "investigating").length;
+      const resolvedCount = items.filter((i) => i.status === "resolved").length;
 
-    return {
-      total: items.length,
-      critical: criticalCount,
-      investigating: investigatingCount,
-      resolved: resolvedCount,
-      weeklyChangePercent: MOCK_INCIDENT_KPIS.weeklyChangePercent,
-      resolutionRateChangePercent: MOCK_INCIDENT_KPIS.resolutionRateChangePercent,
-    };
+      return {
+        total: items.length,
+        critical: criticalCount,
+        investigating: investigatingCount,
+        resolved: resolvedCount,
+        weeklyChangePercent: 0,
+        resolutionRateChangePercent: 0,
+      };
+    } catch (_) {
+      return {
+        total: 0,
+        critical: 0,
+        investigating: 0,
+        resolved: 0,
+        weeklyChangePercent: 0,
+        resolutionRateChangePercent: 0,
+      };
+    }
   }
 
   async getIncidents(): Promise<IncidentItem[]> {
-    await new Promise((r) => setTimeout(r, 40));
-    return getStoredIncidents();
+    const userLocalItems = getStoredIncidents();
+
+    try {
+      const res = await apiClient.getIncidents(50, 0);
+      const backendItems: IncidentItem[] = (res.items || []).map((item) => ({
+        id: item.id,
+        scanId: item.scan_id,
+        timestamp: item.created_at ? item.created_at.replace("T", " ").replace(/\.\d+.*$/, "") : "Recently",
+        threatType: item.title || "Threat Incident",
+        platform: item.channel || "Telegram",
+        severity: (item.severity as IncidentSeverity) || "critical",
+        status: (item.status as any) || "investigating",
+        analyst: "SOC Triage Queue",
+        description: item.summary || "Incident telemetry record.",
+      }));
+
+      // Merge user local items with backend items
+      const existingIds = new Set(backendItems.map((b) => b.id));
+      const merged = [
+        ...userLocalItems.filter((u) => !existingIds.has(u.id)),
+        ...backendItems,
+      ];
+
+      return merged;
+    } catch (err) {
+      console.warn("Could not load incidents from backend:", err);
+      if (userLocalItems.length > 0) {
+        return userLocalItems;
+      }
+      throw err;
+    }
   }
 
   async getIncidentById(id: string): Promise<IncidentDetail | null> {
-    await new Promise((r) => setTimeout(r, 40));
-
     // 1. Check in-memory detail cache
     if (inMemoryDetails.has(id)) {
       return inMemoryDetails.get(id)!;
@@ -91,36 +118,37 @@ class CentralizedIncidentService implements IIncidentService {
       } catch (_) {}
     }
 
-    // 3. Fallback for mock items
-    const items = getStoredIncidents();
-    const found = items.find((i) => i.id === id);
-    if (found) {
-      const fallbackDetail: IncidentDetail = {
-        ...found,
-        riskOverview: found.description || "Automated threat intelligence triage record.",
-        evidenceArtifacts: [
-          {
-            id: `art-${found.id}-1`,
-            name: `forensic_scan_report_${found.id}.json`,
-            type: "Forensic Report",
-            size: "18kb",
-            actionIcon: "description",
-          },
-        ],
-        aiRecommendations: [
-          "Quarantine sender / host address across perimeter security.",
-          "Verify multi-factor authentication on potentially targeted accounts.",
-        ],
-      };
-      inMemoryDetails.set(id, fallbackDetail);
-      return fallbackDetail;
-    }
+    // 3. Search in current incidents list
+    try {
+      const items = await this.getIncidents();
+      const found = items.find((i) => i.id === id);
+      if (found) {
+        const detail: IncidentDetail = {
+          ...found,
+          riskOverview: found.description || `High confidence ${found.threatType} incident detected on ${found.platform}.`,
+          evidenceArtifacts: [
+            {
+              id: `art-${found.id}-1`,
+              name: found.scanId ? `scan_${found.scanId.slice(0, 8)}.json` : `evidence_${found.id}.json`,
+              type: "Forensic Report",
+              size: "Telemetry Log",
+              actionIcon: "description",
+            },
+          ],
+          aiRecommendations: [
+            "Review linked forensic telemetry report for threat indicators.",
+            "Quarantine flagged payloads and verify affected endpoints.",
+          ],
+        };
+        inMemoryDetails.set(id, detail);
+        return detail;
+      }
+    } catch (_) {}
 
-    return MOCK_INCIDENT_DETAIL_INC4092;
+    return null;
   }
 
   async updateIncidentStatus(id: string, status: "open" | "investigating" | "resolved"): Promise<void> {
-    await new Promise((r) => setTimeout(r, 50));
     const items = getStoredIncidents();
     const target = items.find((i) => i.id === id);
     if (target) {

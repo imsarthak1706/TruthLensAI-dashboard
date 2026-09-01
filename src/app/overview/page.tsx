@@ -4,8 +4,10 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { scanService } from "@/services/scanService";
 import { analyticsService } from "@/services/analyticsService";
+import { incidentService } from "@/services/incidentService";
 import { OverviewKpis, ScanItem, SeverityDistributionData } from "@/types/scan";
 import { ModalityLatency } from "@/types/analytics";
+import { IncidentItem } from "@/types/incident";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
@@ -19,21 +21,25 @@ export default function OverviewPage() {
   const [severityData, setSeverityData] = useState<SeverityDistributionData | null>(null);
   const [recentScans, setRecentScans] = useState<ScanItem[]>([]);
   const [latencyData, setLatencyData] = useState<ModalityLatency[]>([]);
+  const [activeIncidents, setActiveIncidents] = useState<IncidentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [kpiRes, sevRes, scansRes, latencyRes] = await Promise.all([
+        const [kpiRes, sevRes, scansRes, latencyRes, incidentsRes] = await Promise.all([
           scanService.getOverviewKpis(),
           scanService.getSeverityDistribution(),
           scanService.getRecentScans(5),
           analyticsService.getModalityLatency(),
+          incidentService.getIncidents(),
         ]);
         setKpis(kpiRes);
         setSeverityData(sevRes);
         setRecentScans(scansRes);
         setLatencyData(latencyRes);
+        // Display active (non-resolved) incidents
+        setActiveIncidents(incidentsRes.filter((i) => i.status !== "resolved").slice(0, 3));
       } catch (err) {
         console.error("Failed to load overview data", err);
       } finally {
@@ -52,7 +58,7 @@ export default function OverviewPage() {
             TruthLensAI Security Overview
           </h2>
           <p className="font-body-md text-body-md text-on-surface-variant mt-1">
-            Multimodal threat detection metrics, SOC queue status, and community telemetry.
+            Multimodal threat detection metrics, SOC queue status, and telemetry overview.
           </p>
         </div>
         <Link href="/scan/new">
@@ -62,7 +68,7 @@ export default function OverviewPage() {
         </Link>
       </header>
 
-      {/* KPI Row (6 Bento Cards - Aligned with centralized mock service) */}
+      {/* KPI Row (6 Bento Cards - Real Metrics & Honest Empty States) */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-gutter">
         {/* Total Scans */}
         <Card className="p-4 flex flex-col justify-between h-28 relative overflow-hidden group">
@@ -70,13 +76,12 @@ export default function OverviewPage() {
           <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
             Total Scans
           </span>
-          <div className="flex items-baseline gap-2 mt-auto">
+          <div className="flex flex-col mt-auto">
             <span className="font-display-lg text-display-lg text-on-surface font-bold">
-              {kpis?.totalScansLabel || "12.4k"}
+              {loading ? "..." : (kpis?.totalScans ?? 0)}
             </span>
-            <span className="text-primary text-xs flex items-center font-code-sm">
-              <Icon name="trending_up" className="text-[14px] mr-0.5" />
-              {kpis?.totalScansTrend || "+12%"}
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              {loading ? "Loading..." : kpis ? "Indexed Scans" : "Telemetry unavailable"}
             </span>
           </div>
         </Card>
@@ -89,13 +94,12 @@ export default function OverviewPage() {
           <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
             Threats Detected
           </span>
-          <div className="flex items-baseline gap-2 mt-auto">
+          <div className="flex flex-col mt-auto">
             <span className="font-display-lg text-display-lg text-error font-bold">
-              {kpis?.threatsDetected || 842}
+              {loading ? "..." : (kpis?.threatsDetected ?? 0)}
             </span>
-            <span className="text-error text-xs flex items-center font-code-sm">
-              <Icon name="trending_up" className="text-[14px] mr-0.5" />
-              {kpis?.threatsTrend || "+4%"}
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              Risk Score ≥ 40
             </span>
           </div>
         </Card>
@@ -108,13 +112,12 @@ export default function OverviewPage() {
           <span className="font-label-caps text-label-caps text-error uppercase tracking-wider flex items-center gap-1">
             <Icon name="emergency" fill={true} className="text-[14px]" /> Critical Threats
           </span>
-          <div className="flex items-baseline gap-2 mt-auto">
+          <div className="flex flex-col mt-auto">
             <span className="font-display-lg text-display-lg text-error font-bold">
-              {kpis?.criticalThreats || 24}
+              {loading ? "..." : (kpis?.criticalThreats ?? 0)}
             </span>
-            <span className="text-on-surface-variant text-xs flex items-center font-code-sm">
-              <Icon name="trending_down" className="text-[14px] mr-0.5 text-primary" />
-              {kpis?.criticalThreatsTrend || "-2"}
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              Immediate Triage
             </span>
           </div>
         </Card>
@@ -124,13 +127,12 @@ export default function OverviewPage() {
           <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
             Community Reports
           </span>
-          <div className="flex items-baseline gap-2 mt-auto">
+          <div className="flex flex-col mt-auto">
             <span className="font-display-lg text-display-lg text-on-surface font-bold">
-              {kpis?.communityReportsLabel || "1.2k"}
+              {loading ? "..." : (kpis?.communityReports ?? 0)}
             </span>
-            <span className="text-primary text-xs flex items-center font-code-sm">
-              <Icon name="trending_up" className="text-[14px] mr-0.5" />
-              {kpis?.communityReportsTrend || "+18%"}
+            <span className="text-[11px] font-code-sm text-on-surface-variant">
+              Indexed Indicators
             </span>
           </div>
         </Card>
@@ -140,10 +142,12 @@ export default function OverviewPage() {
           <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
             Detection Confidence
           </span>
-          <div className="flex items-baseline gap-2 mt-auto">
-            <span className="font-display-lg text-display-lg text-primary font-bold">
-              {kpis?.detectionConfidence || 98.2}
-              <span className="text-2xl">%</span>
+          <div className="flex flex-col mt-auto">
+            <span className="font-display-lg text-2xl text-on-surface-variant/80 font-bold">
+              N/A
+            </span>
+            <span className="text-[10px] font-code-sm text-on-surface-variant/70 truncate">
+              No aggregate telemetry
             </span>
           </div>
         </Card>
@@ -153,13 +157,12 @@ export default function OverviewPage() {
           <span className="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider">
             Avg Response Time
           </span>
-          <div className="flex items-baseline gap-2 mt-auto">
-            <span className="font-display-lg text-display-lg text-on-surface font-bold">
-              {kpis?.avgResponseTime || "2.8s"}
+          <div className="flex flex-col mt-auto">
+            <span className="font-display-lg text-2xl text-on-surface-variant/80 font-bold">
+              N/A
             </span>
-            <span className="text-primary text-xs flex items-center font-code-sm">
-              <Icon name="trending_down" className="text-[14px] mr-0.5" />
-              {kpis?.avgResponseTimeTrend || "-0.2s"}
+            <span className="text-[10px] font-code-sm text-on-surface-variant/70 truncate">
+              No aggregate telemetry
             </span>
           </div>
         </Card>
@@ -215,59 +218,75 @@ export default function OverviewPage() {
                 </tr>
               </thead>
               <tbody className="font-code-sm text-code-sm divide-y divide-[#30363D]/30">
-                {recentScans.map((scan) => (
-                  <tr
-                    key={scan.id}
-                    className="hover:bg-[#1C2128] transition-colors group cursor-pointer"
-                  >
-                    <td className="py-2.5 px-4 text-on-surface-variant font-code-sm">
-                      {scan.timestamp}
-                    </td>
-                    <td className="py-2.5 px-4 text-on-surface truncate max-w-[200px] font-code-sm">
-                      <Link href={`/scan/${scan.id}`} className="hover:text-primary transition-colors">
-                        {scan.targetInput}
-                      </Link>
-                    </td>
-                    <td className="py-2.5 px-4 text-on-surface-variant uppercase text-xs">
-                      {scan.modality}
-                    </td>
-                    <td className="py-2.5 px-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-10">
-                          <ProgressBar
-                            value={scan.riskScore}
-                            colorClass={
+                {recentScans.length > 0 ? (
+                  recentScans.map((scan) => (
+                    <tr
+                      key={scan.id}
+                      className="hover:bg-[#1C2128] transition-colors group cursor-pointer"
+                    >
+                      <td className="py-2.5 px-4 text-on-surface-variant font-code-sm">
+                        {scan.timestamp}
+                      </td>
+                      <td className="py-2.5 px-4 text-on-surface truncate max-w-[200px] font-code-sm">
+                        <Link href={`/scan/${scan.id}`} className="hover:text-primary transition-colors">
+                          {scan.targetInput}
+                        </Link>
+                      </td>
+                      <td className="py-2.5 px-4 text-on-surface-variant uppercase text-xs">
+                        {scan.modality}
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-10">
+                            <ProgressBar
+                              value={scan.riskScore}
+                              colorClass={
+                                scan.riskScore > 75
+                                  ? "bg-error"
+                                  : scan.riskScore > 40
+                                  ? "bg-tertiary-container"
+                                  : "bg-primary"
+                              }
+                            />
+                          </div>
+                          <span
+                            className={
                               scan.riskScore > 75
-                                ? "bg-error"
+                                ? "text-error"
                                 : scan.riskScore > 40
-                                ? "bg-tertiary-container"
-                                : "bg-primary"
+                                ? "text-tertiary-container"
+                                : "text-primary"
                             }
-                          />
+                          >
+                            {scan.riskScore < 10 ? `0${scan.riskScore}` : scan.riskScore}
+                          </span>
                         </div>
-                        <span
-                          className={
-                            scan.riskScore > 75
-                              ? "text-error"
-                              : scan.riskScore > 40
-                              ? "text-tertiary-container"
-                              : "text-primary"
-                          }
-                        >
-                          {scan.riskScore < 10 ? `0${scan.riskScore}` : scan.riskScore}
-                        </span>
+                      </td>
+                      <td className="py-2.5 px-4">
+                        <Badge variant={scan.severity} glow={scan.severity === "critical"}>
+                          {scan.severity}
+                        </Badge>
+                      </td>
+                      <td className="py-2.5 px-4 text-primary flex items-center gap-1 font-label-caps text-xs">
+                        <Icon name="check_circle" className="text-sm" /> Complete
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-10 px-4 text-center">
+                      <div className="space-y-1 text-on-surface-variant max-w-sm mx-auto">
+                        <Icon name="search_off" className="text-3xl mx-auto opacity-40 mb-1" />
+                        <p className="font-code-sm text-xs text-on-surface font-semibold">
+                          No recent scans recorded
+                        </p>
+                        <p className="text-[11px] font-code-sm text-on-surface-variant/70">
+                          Analyze content in the Multimodal Threat Scanner to generate forensic records.
+                        </p>
                       </div>
                     </td>
-                    <td className="py-2.5 px-4">
-                      <Badge variant={scan.severity} glow={scan.severity === "critical"}>
-                        {scan.severity}
-                      </Badge>
-                    </td>
-                    <td className="py-2.5 px-4 text-primary flex items-center gap-1 font-label-caps text-xs">
-                      <Icon name="check_circle" className="text-sm" /> Complete
-                    </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>
@@ -276,7 +295,7 @@ export default function OverviewPage() {
         {/* Incidents & Community Side Panels (Spans 4 cols) */}
         <div className="lg:col-span-4 flex flex-col gap-gutter">
           {/* Actionable Incidents Panel */}
-          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-4 flex-1">
+          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-4 flex-1 flex flex-col justify-between">
             <div className="flex justify-between items-center mb-4">
               <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
                 <Icon name="report_problem" className="text-error text-lg" /> Actionable Incidents
@@ -285,68 +304,63 @@ export default function OverviewPage() {
                 Manage
               </Link>
             </div>
-            <div className="space-y-3">
-              <Link href="/incidents">
-                <div className="p-3 bg-[#1C2128] border border-[#30363D] rounded hover:border-outline-variant transition-colors cursor-pointer mb-2">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-code-sm text-code-sm text-error font-bold">INC-8492</span>
-                    <span className="font-label-caps text-[10px] text-on-surface-variant">2m ago</span>
-                  </div>
-                  <p className="font-body-sm text-body-sm text-on-surface mb-2 leading-tight">
-                    Coordinated Phishing Campaign detected targeting Financial sector templates.
-                  </p>
-                  <div className="flex gap-2">
-                    <Badge variant="critical">Critical</Badge>
-                    <Badge variant="open">Open</Badge>
-                  </div>
-                </div>
-              </Link>
 
-              <Link href="/incidents">
-                <div className="p-3 bg-[#1C2128] border border-[#30363D] rounded hover:border-outline-variant transition-colors cursor-pointer">
-                  <div className="flex justify-between items-start mb-1">
-                    <span className="font-code-sm text-code-sm text-tertiary-container font-bold">INC-8491</span>
-                    <span className="font-label-caps text-[10px] text-on-surface-variant">15m ago</span>
-                  </div>
-                  <p className="font-body-sm text-body-sm text-on-surface mb-2 leading-tight">
-                    Spike in malicious smart contract deployments on ETH mainnet.
-                  </p>
-                  <div className="flex gap-2">
-                    <Badge variant="high">High</Badge>
-                    <Badge variant="investigating">Investigating</Badge>
-                  </div>
-                </div>
-              </Link>
-            </div>
+            {activeIncidents.length > 0 ? (
+              <div className="space-y-2.5">
+                {activeIncidents.map((inc) => (
+                  <Link key={inc.id} href={`/incidents?selectedId=${inc.id}`}>
+                    <div className="p-3 bg-[#1C2128] border border-[#30363D] rounded hover:border-outline-variant transition-colors cursor-pointer mb-2 last:mb-0">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className={`font-code-sm text-code-sm font-bold ${inc.severity === "critical" ? "text-error" : "text-tertiary-container"}`}>
+                          {inc.id}
+                        </span>
+                        <span className="font-label-caps text-[10px] text-on-surface-variant truncate max-w-[90px]">
+                          {inc.timestamp}
+                        </span>
+                      </div>
+                      <p className="font-body-sm text-body-sm text-on-surface mb-2 leading-tight line-clamp-2">
+                        {inc.threatType || inc.description}
+                      </p>
+                      <div className="flex gap-2">
+                        <Badge variant={inc.severity}>{inc.severity}</Badge>
+                        <Badge variant={inc.status}>{inc.status}</Badge>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="py-8 px-4 rounded border border-dashed border-outline-variant/40 bg-[#0C0E12] text-center space-y-1.5 my-auto">
+                <Icon name="check_circle" className="text-primary text-2xl mx-auto opacity-60" />
+                <p className="font-code-sm text-xs font-semibold text-on-surface">No active incidents</p>
+                <p className="text-[11px] font-code-sm text-on-surface-variant/70 max-w-xs mx-auto">
+                  All reported threat telemetry is currently resolved or awaiting incident creation.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Community Intel Consensus Panel */}
-          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-4 flex-1">
-            <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold mb-4 flex items-center gap-2">
-              <Icon name="public" className="text-primary text-lg" /> Community Intelligence
-            </h3>
-            <div className="p-3 bg-[#0A0C10] border border-outline-variant/50 rounded">
-              <div className="flex items-center gap-2 mb-2">
-                <Icon name="language" className="text-on-surface-variant text-sm" />
-                <span className="font-code-sm text-code-sm text-on-surface truncate">
-                  amazon-account-verify.xyz
-                </span>
-              </div>
-              <div className="flex justify-between items-end">
-                <div>
-                  <span className="block font-label-caps text-[10px] text-on-surface-variant uppercase mb-1">
-                    Reputation Consensus
-                  </span>
-                  <Badge variant="high">High Risk</Badge>
-                </div>
-                <div className="text-right">
-                  <span className="block font-display-lg text-2xl font-bold text-on-surface">15</span>
-                  <span className="font-label-caps text-[10px] text-on-surface-variant uppercase">
-                    Reports / 24h
-                  </span>
-                </div>
-              </div>
+          <div className="bg-[#161B22] border border-[#30363D] rounded-lg p-4 flex-1 flex flex-col justify-between">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
+                <Icon name="public" className="text-primary text-lg" /> Community Intelligence
+              </h3>
+              <Link href="/community" className="text-xs text-primary font-label-caps uppercase hover:underline">
+                Feed
+              </Link>
             </div>
+
+            <div className="py-6 px-4 rounded border border-dashed border-outline-variant/40 bg-[#0A0C10] text-center space-y-1.5 my-auto">
+              <Icon name="public_off" className="text-on-surface-variant text-2xl mx-auto opacity-50" />
+              <p className="font-code-sm text-xs font-semibold text-on-surface">
+                Community telemetry unavailable
+              </p>
+              <p className="text-[11px] font-code-sm text-on-surface-variant/70 max-w-xs mx-auto">
+                Decentralized indicator consensus feed not yet connected to live telemetry stream.
+              </p>
+            </div>
+
             <Link href="/community">
               <button className="w-full mt-3 py-2 border border-[#30363D] rounded text-on-surface-variant hover:text-on-surface hover:bg-[#1C2128] transition-colors font-label-caps text-label-caps uppercase text-center text-xs">
                 View Global Feed

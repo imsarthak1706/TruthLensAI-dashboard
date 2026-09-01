@@ -23,7 +23,8 @@ export interface EvidenceItem {
 
 export interface MetricBreakdown {
   name: string;
-  score: number;
+  score?: number;
+  statusText?: string;
   category: 'critical' | 'warning' | 'info';
 }
 
@@ -33,14 +34,16 @@ export interface ExternalIntelSummary {
   suspiciousCount: number;
   harmlessCount: number;
   totalEngines: number;
+  available?: boolean;
 }
 
 export interface CommunityReputationItem {
   type: string;
   target: string;
-  reportCount: number;
-  riskLabel: string;
+  reportCount?: number;
+  riskLabel?: string;
   severity: SeverityLevel;
+  statusText?: string;
 }
 
 export interface ScanTiming {

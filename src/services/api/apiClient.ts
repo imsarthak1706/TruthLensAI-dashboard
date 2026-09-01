@@ -1,5 +1,7 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://truthlens-ai-1-7unv.onrender.com";
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://truthlens-ai-1-7unv.onrender.com";
 
 export interface BackendScanRequest {
   input: string;
@@ -345,4 +347,209 @@ export const apiClient = {
       );
     }
   },
+
+  // 6. Platform Telemetry Overview (GET /api/telemetry/overview)
+  async getOverviewTelemetry(): Promise<BackendTelemetryOverview> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/telemetry/overview`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new ApiError(`Backend HTTP ${response.status}`, response.status);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(
+        error.message || "Failed to fetch platform telemetry overview",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
+
+  // 7. Paginated Scan History (GET /api/scans?limit={limit}&offset={offset})
+  async getScans(limit = 10, offset = 0): Promise<BackendScanHistoryResponse> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/scans?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new ApiError(`Backend HTTP ${response.status}`, response.status);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(
+        error.message || "Failed to fetch scan history from backend",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
+
+  // 8. Community Intelligence Feed (GET /api/community/feed?limit={limit})
+  async getCommunityFeed(limit = 50): Promise<BackendCommunityFeedResponse> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/community/feed?limit=${encodeURIComponent(limit)}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new ApiError(`Backend HTTP ${response.status}`, response.status);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(
+        error.message || "Failed to fetch community intelligence feed",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
+
+  // 9. Incident Reports (GET /api/incidents?limit={limit}&offset={offset})
+  async getIncidents(limit = 20, offset = 0): Promise<BackendIncidentsResponse> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/incidents?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new ApiError(`Backend HTTP ${response.status}`, response.status);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(
+        error.message || "Failed to fetch incidents from backend",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
 };
+
+export interface BackendTelemetryOverview {
+  total_scans: number;
+  threats_detected: number;
+  critical_threats: number;
+  community_reports_indexed: number;
+  severity_distribution: {
+    critical: number;
+    high: number;
+    suspicious: number;
+    safe: number;
+    total: number;
+  };
+  threat_activity: Array<{
+    time: string;
+    threats: number;
+    clean: number;
+  }>;
+}
+
+export interface BackendScanHistoryItem {
+  id: string;
+  timestamp: string;
+  platform: string;
+  target_input: string;
+  modality: string;
+  risk_score: number;
+  severity: string;
+  verdict: string;
+  threat_type: string;
+  status: string;
+}
+
+export interface BackendScanHistoryResponse {
+  items: BackendScanHistoryItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface BackendCommunityIndicatorItem {
+  indicator: string;
+  indicator_type: string;
+  report_count: number;
+  risk_tier: string;
+  first_seen: string | null;
+  last_seen: string | null;
+}
+
+export interface BackendCommunityFeedResponse {
+  items: BackendCommunityIndicatorItem[];
+  total: number;
+}
+
+export interface BackendIncidentItem {
+  id: string;
+  scan_id: string;
+  title: string;
+  channel: string;
+  severity: string;
+  risk_score: number;
+  confidence: string;
+  status: string;
+  created_at: string;
+  summary: string;
+}
+
+export interface BackendIncidentsResponse {
+  items: BackendIncidentItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
