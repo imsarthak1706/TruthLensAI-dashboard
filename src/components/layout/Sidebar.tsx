@@ -75,19 +75,21 @@ export function Sidebar() {
 
       {/* Footer Navigation & Profile */}
       <div className="px-4 mt-auto">
-        <ul className="space-y-1 pt-4 border-t border-outline-variant">
-          {FOOTER_NAV_LINKS.map((item) => (
-            <li key={item.label}>
-              <Link
-                href={item.href}
-                className="flex items-center gap-3 px-4 py-2 rounded text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors"
-              >
-                <Icon name={item.icon} className="text-lg" />
-                <span className="font-body-sm text-body-sm">{item.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        {FOOTER_NAV_LINKS.length > 0 && (
+          <ul className="space-y-1 pt-4 border-t border-outline-variant">
+            {FOOTER_NAV_LINKS.map((item) => (
+              <li key={item.label}>
+                <Link
+                  href={item.href}
+                  className="flex items-center gap-3 px-4 py-2 rounded text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors"
+                >
+                  <Icon name={item.icon} className="text-lg" />
+                  <span className="font-body-sm text-body-sm">{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {/* User Card */}
         <div className="mt-4 pt-4 border-t border-outline-variant/40 flex items-center gap-3 px-2">

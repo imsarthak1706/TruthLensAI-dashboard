@@ -12,10 +12,6 @@ export const NAV_LINKS = [
   { href: "/community", label: "Community Intelligence", icon: "public" },
   { href: "/incidents", label: "Incidents", icon: "report_problem" },
   { href: "/analytics", label: "Analytics", icon: "analytics" },
-  { href: "/settings", label: "Settings", icon: "settings" },
 ];
 
-export const FOOTER_NAV_LINKS = [
-  { href: "/settings", label: "Profile", icon: "account_circle" },
-  { href: "/settings", label: "Support", icon: "help" },
-];
+export const FOOTER_NAV_LINKS: { href: string; label: string; icon: string }[] = [];

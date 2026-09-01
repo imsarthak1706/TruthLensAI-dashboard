@@ -24,7 +24,7 @@ export function TopAppBar({ onToggleMobileNav }: TopAppBarProps) {
     if (pathname === "/incidents") return "Incident Triage Center";
     if (pathname === "/community") return "Community Intelligence Database";
     if (pathname === "/analytics") return "Detection Analytics & Benchmarks";
-    if (pathname === "/settings") return "System Settings & API Keys";
+    if (pathname === "/settings") return "Access Restricted";
     return "Console";
   };
 
@@ -89,13 +89,13 @@ export function TopAppBar({ onToggleMobileNav }: TopAppBarProps) {
             <span className="w-1.5 h-1.5 rounded-full bg-error absolute top-1.5 right-1.5" />
           </button>
 
-          <Link href="/settings">
+          <div className="ml-1" title="SOC Analyst">
             <img
               src={APP_CONFIG.avatarUrl}
               alt="User Avatar"
-              className="w-8 h-8 rounded-full ml-1 border border-outline-variant object-cover hover:border-primary transition-colors cursor-pointer"
+              className="w-8 h-8 rounded-full border border-outline-variant object-cover"
             />
-          </Link>
+          </div>
         </div>
       </div>
     </header>
