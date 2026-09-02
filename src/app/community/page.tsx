@@ -6,6 +6,7 @@ import { CommunityIndicator } from "@/types/community";
 import { Icon } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
+import { exportIndicatorAsStix } from "@/lib/stixExporter";
 
 export default function CommunityIntelligencePage() {
   const [indicators, setIndicators] = useState<CommunityIndicator[]>([]);
@@ -13,6 +14,7 @@ export default function CommunityIntelligencePage() {
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [stixStatus, setStixStatus] = useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
@@ -65,6 +67,23 @@ export default function CommunityIntelligencePage() {
   const criticalCount = React.useMemo(() => {
     return indicators.filter((i) => i.risk === "Critical").length;
   }, [indicators]);
+
+  const handleExportStix = () => {
+    if (!selectedIndicator) {
+      setStixStatus("Select an indicator first");
+      setTimeout(() => setStixStatus(null), 2500);
+      return;
+    }
+    try {
+      exportIndicatorAsStix(selectedIndicator);
+      setStixStatus("STIX 2.1 exported");
+      setTimeout(() => setStixStatus(null), 2500);
+    } catch (err) {
+      console.error("Failed to export STIX bundle", err);
+      setStixStatus("Export failed");
+      setTimeout(() => setStixStatus(null), 2500);
+    }
+  };
 
   return (
     <div className="space-y-stack-lg max-w-7xl mx-auto">
@@ -389,10 +408,26 @@ export default function CommunityIntelligencePage() {
                   <button className="flex-1 bg-surface-container-high border border-[#30363D] hover:bg-surface-container-highest text-on-surface font-body-sm text-xs py-2 rounded transition-colors flex justify-center items-center gap-1">
                     <Icon name="block" className="text-sm" /> Block IOC
                   </button>
-                  <button className="flex-1 bg-surface-container-high border border-[#30363D] hover:bg-surface-container-highest text-on-surface font-body-sm text-xs py-2 rounded transition-colors flex justify-center items-center gap-1">
-                    <Icon name="download" className="text-sm" /> Export STIX
+                  <button
+                    onClick={handleExportStix}
+                    className="flex-1 bg-surface-container-high border border-[#30363D] hover:bg-surface-container-highest text-on-surface font-body-sm text-xs py-2 rounded transition-colors flex justify-center items-center gap-1"
+                    title="Export STIX 2.1 Bundle"
+                  >
+                    <Icon name={stixStatus === "STIX 2.1 exported" ? "check" : "download"} className="text-sm" />
+                    <span>{stixStatus === "STIX 2.1 exported" ? "STIX 2.1 Exported" : "Export STIX"}</span>
                   </button>
                 </div>
+                {stixStatus && (
+                  <p
+                    className={`text-[11px] font-code-sm text-center mt-2 animate-in fade-in duration-150 ${
+                      stixStatus.includes("failed") || stixStatus.includes("Select")
+                        ? "text-error"
+                        : "text-primary"
+                    }`}
+                  >
+                    {stixStatus === "STIX 2.1 exported" ? "✓ STIX 2.1 JSON bundle downloaded" : stixStatus}
+                  </p>
+                )}
               </div>
             </Card>
           ) : (
