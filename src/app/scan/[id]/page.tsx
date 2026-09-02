@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { RiskMeter } from "@/components/ui/RiskMeter";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { VirusTotalRatioChart } from "@/components/charts/VirusTotalRatioChart";
+import { enrichScanWithCommunity } from "@/services/communityEnrichment";
 
 export default function ScanResultDetailsPage() {
   const params = useParams();
@@ -28,7 +29,17 @@ export default function ScanResultDetailsPage() {
     async function loadScan() {
       try {
         const data = await scanService.getScanById(id);
-        setScan(data);
+        if (data) {
+          try {
+            const { enrichedScan } = await enrichScanWithCommunity(data);
+            setScan(enrichedScan);
+          } catch (commErr) {
+            console.warn("Could not enrich community intel:", commErr);
+            setScan({ ...data, communityStatus: "error" });
+          }
+        } else {
+          setScan(null);
+        }
       } catch (err) {
         console.error("Failed to load scan details", err);
       } finally {
@@ -514,49 +525,109 @@ export default function ScanResultDetailsPage() {
             </div>
 
             <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
-              {scan.communityIntel && scan.communityIntel.length > 0 ? (
-                <div className="space-y-3">
-                  {scan.communityIntel.map((ci, idx) => (
-                    <div
-                      key={`${ci.type}-${idx}`}
-                      className="bg-[#0C0E12] p-3.5 rounded border border-outline-variant flex justify-between items-center group hover:border-primary/50 transition-colors"
-                    >
-                      <div className="flex-1 min-w-0 mr-3">
-                        <p className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-0.5">
-                          {ci.type}
-                        </p>
-                        <p className="font-code-sm text-xs text-on-surface truncate">
-                          {ci.target}
-                        </p>
-                      </div>
-                      <div
-                        className={`flex items-center space-x-2 px-2.5 py-1 rounded border shrink-0 ${
-                          ci.statusText
-                            ? "bg-surface-container/60 text-on-surface-variant border-outline-variant/40"
-                            : ci.severity === "critical"
-                            ? "bg-error/10 text-error border-error/20"
-                            : ci.severity === "high"
-                            ? "bg-tertiary-container/10 text-tertiary-container border-tertiary-container/20"
-                            : "bg-primary/10 text-primary border-primary/20"
-                        }`}
-                      >
-                        <Icon name={ci.statusText ? "schedule" : ci.severity === "safe" ? "check" : "flag"} className="text-xs" />
-                        <span className="font-code-sm text-xs font-semibold">
-                          {ci.statusText || (ci.reportCount !== undefined ? `${ci.reportCount} Reports` : "Not indexed")}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="py-6 px-4 rounded border border-dashed border-outline-variant/40 bg-[#0C0E12] text-center space-y-1.5 my-auto">
-                  <Icon name="groups" className="text-on-surface-variant text-2xl mx-auto opacity-50" />
-                  <p className="font-code-sm text-xs font-semibold text-on-surface">
+              {scan.communityStatus === "error" ? (
+                <div className="py-6 px-4 rounded border border-dashed border-error/40 bg-[#0C0E12] text-center space-y-1.5 my-auto">
+                  <Icon name="cloud_off" className="text-error text-2xl mx-auto opacity-70" />
+                  <p className="font-code-sm text-xs font-semibold text-error">
                     Community telemetry unavailable
                   </p>
                   <p className="text-[11px] font-code-sm text-on-surface-variant/70 max-w-sm mx-auto">
-                    Indicator has not yet been indexed across decentralized community reporting nodes.
+                    Unable to retrieve live consensus indicators from decentralized threat feed.
                   </p>
+                </div>
+              ) : scan.communityStatus === "no_indicator" || (!scan.communityIntel || scan.communityIntel.length === 0) ? (
+                <div className="py-6 px-4 rounded border border-dashed border-outline-variant/40 bg-[#0C0E12] text-center space-y-1.5 my-auto">
+                  <Icon name="search_off" className="text-on-surface-variant text-2xl mx-auto opacity-50" />
+                  <p className="font-code-sm text-xs font-semibold text-on-surface">
+                    No community indicator to correlate
+                  </p>
+                  <p className="text-[11px] font-code-sm text-on-surface-variant/70 max-w-sm mx-auto">
+                    This payload does not contain an observable URL or domain indicator for community reputation indexing.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {scan.communityIntel.map((ci, idx) => {
+                    const isMatched = typeof ci.reportCount === "number" && ci.reportCount > 0;
+                    return (
+                      <div
+                        key={`${ci.type}-${ci.target}-${idx}`}
+                        className={`bg-[#0C0E12] p-3.5 rounded border transition-colors ${
+                          isMatched
+                            ? ci.severity === "critical"
+                              ? "border-error/40 hover:border-error"
+                              : ci.severity === "high"
+                              ? "border-tertiary-container/40 hover:border-tertiary-container"
+                              : "border-outline-variant hover:border-primary/50"
+                            : "border-outline-variant/40"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 min-w-0 mr-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <p className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">
+                                {ci.type}
+                              </p>
+                              {isMatched && ci.riskLabel && (
+                                <span
+                                  className={`font-label-caps text-[9px] uppercase px-1.5 py-0.5 rounded border font-semibold ${
+                                    ci.severity === "critical"
+                                      ? "bg-error/10 text-error border-error/30"
+                                      : ci.severity === "high"
+                                      ? "bg-tertiary-container/10 text-tertiary-container border-tertiary-container/30"
+                                      : "bg-primary/10 text-primary border-primary/30"
+                                  }`}
+                                >
+                                  Risk Tier: {ci.riskLabel}
+                                </span>
+                              )}
+                            </div>
+                            <p className="font-code-sm text-xs text-on-surface break-all select-all font-medium" title={ci.target}>
+                              {ci.target}
+                            </p>
+                          </div>
+
+                          <div
+                            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded border shrink-0 ${
+                              isMatched
+                                ? ci.severity === "critical"
+                                  ? "bg-error/10 text-error border-error/20 font-bold"
+                                  : ci.severity === "high"
+                                  ? "bg-tertiary-container/10 text-tertiary-container border-tertiary-container/20 font-bold"
+                                  : "bg-primary/10 text-primary border-primary/20 font-bold"
+                                : "bg-surface-container/60 text-on-surface-variant border-outline-variant/40"
+                            }`}
+                          >
+                            <Icon
+                              name={isMatched ? "flag" : "schedule"}
+                              className="text-xs"
+                            />
+                            <span className="font-code-sm text-xs">
+                              {isMatched
+                                ? `${ci.reportCount} Community Reports`
+                                : "Not indexed (0 reports)"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Real Observation Timestamps if matched */}
+                        {isMatched && (ci.firstSeen || ci.lastSeen) && (
+                          <div className="mt-2.5 pt-2 border-t border-[#30363D]/40 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] font-code-sm text-on-surface-variant">
+                            {ci.firstSeen && (
+                              <span>
+                                First Seen: <strong className="text-on-surface font-medium">{ci.firstSeen}</strong>
+                              </span>
+                            )}
+                            {ci.lastSeen && (
+                              <span>
+                                Last Seen: <strong className="text-on-surface font-medium">{ci.lastSeen}</strong>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
 

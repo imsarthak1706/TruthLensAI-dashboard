@@ -44,6 +44,8 @@ export interface CommunityReputationItem {
   riskLabel?: string;
   severity: SeverityLevel;
   statusText?: string;
+  firstSeen?: string;
+  lastSeen?: string;
 }
 
 export interface ScanTiming {
@@ -132,6 +134,7 @@ export interface ScanResult {
   evidence: EvidenceItem[];
   externalIntel: ExternalIntelSummary;
   communityIntel: CommunityReputationItem[];
+  communityStatus?: "indexed" | "not_indexed" | "no_indicator" | "error";
   timing?: ScanTiming;
   extractedEntities?: ExtractedEntities;
 
