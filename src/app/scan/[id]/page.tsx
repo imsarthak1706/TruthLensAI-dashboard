@@ -157,8 +157,9 @@ export default function ScanResultDetailsPage() {
             }`}
           />
 
-          <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
-            <div className="space-y-4 flex-1">
+          {/* Top Section: Threat Badge, Headline & Risk Meter */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-5 border-b border-outline-variant/30">
+            <div className="space-y-2 flex-1 min-w-0">
               <Badge
                 variant={scan.severity}
                 glow={scan.severity === "critical" || scan.severity === "high"}
@@ -168,46 +169,58 @@ export default function ScanResultDetailsPage() {
                 {scan.severity.toUpperCase()} {scan.severity === "safe" ? "STATUS" : "THREAT"}
               </Badge>
 
-              <div>
-                <h3 className="font-headline-md text-headline-md font-bold text-on-surface mb-1">
-                  {scan.headline}
-                </h3>
-                <p className="font-code-sm text-code-sm text-on-surface-variant break-all bg-[#0C0E12] p-2.5 rounded border border-outline-variant inline-block select-all max-w-full">
-                  {scan.targetInput}
-                </p>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 mt-6">
-                <div>
-                  <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">
-                    Confidence
-                  </p>
-                  <p
-                    className={`font-body-md text-body-md font-bold ${
-                      scan.severity === "critical"
-                        ? "text-error"
-                        : scan.severity === "high"
-                        ? "text-tertiary-container"
-                        : "text-primary"
-                    }`}
-                  >
-                    {scan.confidenceLabel}
-                  </p>
-                </div>
-                <div>
-                  <p className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">
-                    Input Modality
-                  </p>
-                  <p className="font-body-md text-body-md text-on-surface uppercase font-medium">
-                    {scan.modality} Analysis Engine
-                  </p>
-                </div>
-              </div>
+              <h3 className="font-headline-md text-2xl sm:text-3xl font-bold text-on-surface tracking-tight break-words">
+                {(scan.headline || "").replace(/\bdetected\s+detected\b/gi, "Detected").trim()}
+              </h3>
             </div>
 
             {/* Risk Meter Gauge */}
-            <div className="flex flex-col items-center justify-center bg-[#0C0E12] p-6 rounded-lg border border-outline-variant sm:w-48 w-full shrink-0 relative">
-              <RiskMeter score={scan.riskScore} size={120} strokeWidth={8} label="Risk Score" />
+            <div className="flex flex-col items-center justify-center bg-[#0C0E12] px-6 py-4 rounded-lg border border-outline-variant shrink-0 w-full sm:w-auto">
+              <RiskMeter score={scan.riskScore} size={110} strokeWidth={8} label="Risk Score" />
+            </div>
+          </div>
+
+          {/* Full-Width Analyzed Input Preview */}
+          <div className="mt-5 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <span className="font-label-caps text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold">
+                Analyzed Input Target
+              </span>
+              <span className="font-code-sm text-[11px] text-on-surface-variant/70">
+                {scan.targetInput ? `${scan.targetInput.length} chars` : ""}
+              </span>
+            </div>
+            <div className="w-full bg-[#0C0E12] p-3.5 rounded-lg border border-outline-variant/60 font-code-sm text-xs sm:text-sm text-on-surface leading-relaxed break-words [overflow-wrap:anywhere] select-all max-h-56 overflow-y-auto custom-scrollbar">
+              {scan.targetInput}
+            </div>
+          </div>
+
+          {/* Responsive Confidence & Input Modality Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-5 mt-5 border-t border-outline-variant/30">
+            <div className="bg-[#0C0E12]/60 p-3.5 rounded-lg border border-outline-variant/30 flex flex-col justify-between">
+              <p className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">
+                Confidence Score
+              </p>
+              <p
+                className={`font-body-md text-sm sm:text-base font-bold ${
+                  scan.severity === "critical"
+                    ? "text-error"
+                    : scan.severity === "high"
+                    ? "text-tertiary-container"
+                    : "text-primary"
+                }`}
+              >
+                {scan.confidenceLabel}
+              </p>
+            </div>
+
+            <div className="bg-[#0C0E12]/60 p-3.5 rounded-lg border border-outline-variant/30 flex flex-col justify-between">
+              <p className="font-label-caps text-[10px] text-on-surface-variant uppercase tracking-wider mb-1">
+                Input Modality
+              </p>
+              <p className="font-body-md text-sm sm:text-base text-on-surface uppercase font-medium">
+                {scan.modality} Analysis Engine
+              </p>
             </div>
           </div>
         </div>
@@ -287,11 +300,11 @@ export default function ScanResultDetailsPage() {
                         ev.severity === "safe" ? "text-primary" : "text-error"
                       }`}
                     />
-                    <div className="flex-1 overflow-hidden">
-                      <p className="font-body-sm text-body-sm text-on-surface font-semibold leading-snug">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-body-sm text-body-sm text-on-surface font-semibold leading-snug break-words">
                         {ev.title}
                       </p>
-                      <p className="font-code-sm text-on-surface-variant text-[11px] mt-0.5">
+                      <p className="font-code-sm text-on-surface-variant text-[11px] mt-0.5 break-words">
                         {ev.description}
                       </p>
                     </div>
@@ -508,11 +521,11 @@ export default function ScanResultDetailsPage() {
                       key={`${ci.type}-${idx}`}
                       className="bg-[#0C0E12] p-3.5 rounded border border-outline-variant flex justify-between items-center group hover:border-primary/50 transition-colors"
                     >
-                      <div className="overflow-hidden mr-3">
+                      <div className="flex-1 min-w-0 mr-3">
                         <p className="font-label-caps text-[10px] text-on-surface-variant uppercase mb-0.5">
                           {ci.type}
                         </p>
-                        <p className="font-code-sm text-xs text-on-surface truncate max-w-[220px] sm:max-w-[280px]">
+                        <p className="font-code-sm text-xs text-on-surface truncate">
                           {ci.target}
                         </p>
                       </div>

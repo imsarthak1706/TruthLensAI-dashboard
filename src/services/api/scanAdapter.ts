@@ -128,10 +128,11 @@ export function normalizeBackendScanResponse(
     ? "INFORMATIONAL"
     : `LOW (${confidenceScore}%)`;
 
-  // 4. Normalize headline
+  // 4. Normalize headline (prevent duplicate "Detected" suffixes)
   let headline = "";
   if (backend.threat_type) {
-    headline = `${backend.threat_type} Detected`;
+    const rawThreat = backend.threat_type.trim();
+    headline = /\bdetected$/i.test(rawThreat) ? rawThreat : `${rawThreat} Detected`;
   } else if (modality === "image") {
     headline =
       riskScore >= 75
@@ -161,6 +162,8 @@ export function normalizeBackendScanResponse(
         ? "Suspicious Content Detected"
         : "Content Verified Safe";
   }
+
+  headline = headline.replace(/\bdetected\s+detected\b/gi, "Detected").trim();
 
   // 5. Normalize evidence signals
   const evidence: EvidenceItem[] = (backend.evidence || []).map((item, idx) => {
