@@ -32,7 +32,7 @@ function IncidentCenterContent() {
     try {
       const [kpiData, items] = await Promise.all([
         incidentService.getKpis(),
-        incidentService.getIncidents(),
+        incidentService.getIncidents(pageSize, (page - 1) * pageSize),
       ]);
       setKpis(kpiData);
       setIncidents(items);
@@ -52,7 +52,7 @@ function IncidentCenterContent() {
     } finally {
       setLoading(false);
     }
-  }, [selectedIdFromUrl]);
+  }, [selectedIdFromUrl, page]);
 
   useEffect(() => {
     loadData();
@@ -87,8 +87,9 @@ function IncidentCenterContent() {
     return matchSearch && matchStatus;
   });
 
-  const totalPages = Math.ceil(filteredIncidents.length / pageSize) || 1;
-  const pagedIncidents = filteredIncidents.slice((page - 1) * pageSize, page * pageSize);
+  const totalCount = kpis?.total ?? incidents.length;
+  const totalPages = Math.ceil(totalCount / pageSize) || 1;
+  const pagedIncidents = filteredIncidents;
 
   return (
     <div className="space-y-stack-lg max-w-7xl mx-auto">
@@ -347,12 +348,12 @@ function IncidentCenterContent() {
               </table>
             </div>
 
-            {filteredIncidents.length > pageSize && (
+            {totalCount > pageSize && (
               <div className="p-3 border-t border-[#30363D]">
                 <Pagination
                   currentPage={page}
                   totalPages={totalPages}
-                  totalEntries={filteredIncidents.length}
+                  totalEntries={totalCount}
                   onPageChange={(p) => setPage(p)}
                 />
               </div>

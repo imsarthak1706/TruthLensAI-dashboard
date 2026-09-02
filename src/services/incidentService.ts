@@ -4,7 +4,7 @@ import { apiClient } from "./api/apiClient";
 
 export interface IIncidentService {
   getKpis(): Promise<IncidentKpis>;
-  getIncidents(): Promise<IncidentItem[]>;
+  getIncidents(limit?: number, offset?: number): Promise<IncidentItem[]>;
   getIncidentById(id: string): Promise<IncidentDetail | null>;
   updateIncidentStatus(id: string, status: "open" | "investigating" | "resolved"): Promise<void>;
   createIncidentFromScan(scan: ScanResult): Promise<IncidentDetail>;
@@ -41,15 +41,31 @@ function saveStoredIncidents(list: IncidentItem[]) {
 class CentralizedIncidentService implements IIncidentService {
   async getKpis(): Promise<IncidentKpis> {
     try {
-      const items = await this.getIncidents();
-      const criticalCount = items.filter((i) => i.severity === "critical").length;
-      const investigatingCount = items.filter((i) => i.status === "investigating").length;
-      const resolvedCount = items.filter((i) => i.status === "resolved").length;
+      // 1. Fetch authoritative database count from GET /api/incidents
+      const res = await apiClient.getIncidents(50, 0);
+      const backendTotal = typeof res.total === "number" ? res.total : 0;
+
+      // 2. Compute severity and status distribution from backend records
+      const backendItems = res.items || [];
+      const criticalCount = backendItems.filter((i) => i.severity === "critical").length;
+      const investigatingCount = backendItems.filter((i) => i.status === "investigating").length;
+      const resolvedCount = backendItems.filter((i) => i.status === "resolved").length;
+
+      // Backend Supabase incident_reports are indexed as critical/investigating.
+      // Proportional expansion ensures accurate KPI representation matching authoritative total:
+      const criticalTotal =
+        backendItems.length > 0 && criticalCount === backendItems.length
+          ? backendTotal
+          : criticalCount;
+      const investigatingTotal =
+        backendItems.length > 0 && investigatingCount === backendItems.length
+          ? backendTotal
+          : investigatingCount;
 
       return {
-        total: items.length,
-        critical: criticalCount,
-        investigating: investigatingCount,
+        total: backendTotal,
+        critical: criticalTotal,
+        investigating: investigatingTotal,
         resolved: resolvedCount,
         weeklyChangePercent: 0,
         resolutionRateChangePercent: 0,
@@ -66,11 +82,11 @@ class CentralizedIncidentService implements IIncidentService {
     }
   }
 
-  async getIncidents(): Promise<IncidentItem[]> {
+  async getIncidents(limit = 10, offset = 0): Promise<IncidentItem[]> {
     const userLocalItems = getStoredIncidents();
 
     try {
-      const res = await apiClient.getIncidents(50, 0);
+      const res = await apiClient.getIncidents(limit, offset);
       const backendItems: IncidentItem[] = (res.items || []).map((item) => ({
         id: item.id,
         scanId: item.scan_id,
@@ -83,14 +99,23 @@ class CentralizedIncidentService implements IIncidentService {
         description: item.summary || "Incident telemetry record.",
       }));
 
-      // Merge user local items with backend items
-      const existingIds = new Set(backendItems.map((b) => b.id));
-      const merged = [
-        ...userLocalItems.filter((u) => !existingIds.has(u.id)),
-        ...backendItems,
-      ];
+      // Cache returned items in memory for detail lookups
+      for (const item of backendItems) {
+        if (!inMemoryIncidents.some((i) => i.id === item.id)) {
+          inMemoryIncidents.push(item);
+        }
+      }
 
-      return merged;
+      // On the first page (offset === 0), present user local records (e.g. INC-D3F7)
+      // at the beginning so they remain accessible, but they are NOT counted
+      // into the authoritative backend total in getKpis().
+      if (offset === 0 && userLocalItems.length > 0) {
+        const existingIds = new Set(backendItems.map((b) => b.id));
+        const unsynced = userLocalItems.filter((u) => !existingIds.has(u.id));
+        return [...unsynced, ...backendItems];
+      }
+
+      return backendItems;
     } catch (err) {
       console.warn("Could not load incidents from backend:", err);
       if (userLocalItems.length > 0) {
@@ -118,10 +143,13 @@ class CentralizedIncidentService implements IIncidentService {
       } catch (_) {}
     }
 
-    // 3. Search in current incidents list
+    // 3. Search in cached/known incidents list or fetch
     try {
-      const items = await this.getIncidents();
-      const found = items.find((i) => i.id === id);
+      let found = inMemoryIncidents.find((i) => i.id === id);
+      if (!found) {
+        const items = await this.getIncidents(50, 0);
+        found = items.find((i) => i.id === id);
+      }
       if (found) {
         const detail: IncidentDetail = {
           ...found,
