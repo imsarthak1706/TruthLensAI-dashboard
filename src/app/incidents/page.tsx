@@ -2,7 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { incidentService } from "@/services/incidentService";
 import { IncidentDetail, IncidentItem, IncidentKpis } from "@/types/incident";
 import { Icon } from "@/components/ui/Icon";
@@ -13,6 +13,8 @@ import { SlideOver } from "@/components/ui/SlideOver";
 import { Pagination } from "@/components/ui/Pagination";
 
 function IncidentCenterContent() {
+  const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const selectedIdFromUrl = searchParams?.get("selectedId");
 
@@ -24,7 +26,23 @@ function IncidentCenterContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
+  const [resolving, setResolving] = useState(false);
   const pageSize = 10;
+
+  const removeSelectedIdFromUrl = React.useCallback(() => {
+    const params = new URLSearchParams(searchParams?.toString() || "");
+    if (params.has("selectedId")) {
+      params.delete("selectedId");
+      const qs = params.toString();
+      const nextUrl = qs ? `${pathname}?${qs}` : pathname;
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [router, pathname, searchParams]);
+
+  const statusFilterRef = React.useRef(statusFilter);
+  statusFilterRef.current = statusFilter;
+  const searchRef = React.useRef(search);
+  searchRef.current = search;
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
@@ -40,7 +58,33 @@ function IncidentCenterContent() {
       const targetId = selectedIdFromUrl || items[0]?.id;
       if (targetId) {
         const detail = await incidentService.getIncidentById(targetId);
-        setSelectedIncident(detail);
+        if (detail) {
+          const currentFilter = statusFilterRef.current;
+          const currentSearch = searchRef.current;
+
+          const matchStatus =
+            currentFilter === "all" ||
+            detail.status.toLowerCase() === currentFilter.toLowerCase();
+          const matchSearch =
+            !currentSearch ||
+            detail.id.toLowerCase().includes(currentSearch.toLowerCase()) ||
+            detail.threatType.toLowerCase().includes(currentSearch.toLowerCase()) ||
+            detail.platform.toLowerCase().includes(currentSearch.toLowerCase());
+
+          if (matchStatus && matchSearch) {
+            setSelectedIncident(detail);
+          } else {
+            setSelectedIncident(null);
+            if (selectedIdFromUrl) {
+              removeSelectedIdFromUrl();
+            }
+          }
+        } else {
+          setSelectedIncident(null);
+          if (selectedIdFromUrl) {
+            removeSelectedIdFromUrl();
+          }
+        }
       } else {
         setSelectedIncident(null);
       }
@@ -52,7 +96,7 @@ function IncidentCenterContent() {
     } finally {
       setLoading(false);
     }
-  }, [selectedIdFromUrl, page]);
+  }, [selectedIdFromUrl, page, removeSelectedIdFromUrl]);
 
   useEffect(() => {
     loadData();
@@ -67,25 +111,90 @@ function IncidentCenterContent() {
     }
   };
 
-  const handleResolve = async () => {
-    if (!selectedIncident) return;
-    await incidentService.updateIncidentStatus(selectedIncident.id, "resolved");
-    setSelectedIncident({ ...selectedIncident, status: "resolved" });
-    setIncidents((prev) =>
-      prev.map((i) => (i.id === selectedIncident.id ? { ...i, status: "resolved" } : i))
-    );
+  const handleCloseDetail = () => {
+    setSelectedIncident(null);
+    removeSelectedIdFromUrl();
   };
 
-  const filteredIncidents = incidents.filter((i) => {
-    const matchSearch =
-      !search ||
-      i.id.toLowerCase().includes(search.toLowerCase()) ||
-      i.threatType.toLowerCase().includes(search.toLowerCase()) ||
-      i.platform.toLowerCase().includes(search.toLowerCase());
-    const matchStatus =
-      statusFilter === "all" || i.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchSearch && matchStatus;
-  });
+  const handleResolve = async () => {
+    if (!selectedIncident || resolving) return;
+    try {
+      setResolving(true);
+      await incidentService.updateIncidentStatus(selectedIncident.id, "resolved");
+
+      // Update current selected incident and table state
+      setSelectedIncident((prev) => (prev ? { ...prev, status: "resolved" } : null));
+      setIncidents((prev) =>
+        prev.map((i) => (i.id === selectedIncident.id ? { ...i, status: "resolved" } : i))
+      );
+
+      // Re-fetch authoritative KPIs from backend to reflect new resolved counts
+      const updatedKpis = await incidentService.getKpis();
+      setKpis(updatedKpis);
+    } catch (err) {
+      console.error("Failed to resolve incident", err);
+    } finally {
+      setResolving(false);
+    }
+  };
+
+  const filteredIncidents = React.useMemo(() => {
+    return incidents.filter((i) => {
+      const matchSearch =
+        !search ||
+        i.id.toLowerCase().includes(search.toLowerCase()) ||
+        i.threatType.toLowerCase().includes(search.toLowerCase()) ||
+        i.platform.toLowerCase().includes(search.toLowerCase());
+      const matchStatus =
+        statusFilter === "all" || i.status.toLowerCase() === statusFilter.toLowerCase();
+      return matchSearch && matchStatus;
+    });
+  }, [incidents, search, statusFilter]);
+
+  // Reconcile open detail drawer when filters or search change
+  useEffect(() => {
+    if (!selectedIncident) return;
+    const isStillVisible = filteredIncidents.some((i) => i.id === selectedIncident.id);
+    if (!isStillVisible) {
+      setSelectedIncident(null);
+      removeSelectedIdFromUrl();
+    }
+  }, [statusFilter, search, incidents, selectedIncident, removeSelectedIdFromUrl]);
+
+  const handleStatusFilterChange = (st: string) => {
+    setStatusFilter(st);
+    setPage(1);
+    if (selectedIncident) {
+      const matchStatus = st === "all" || selectedIncident.status.toLowerCase() === st.toLowerCase();
+      const matchSearch =
+        !search ||
+        selectedIncident.id.toLowerCase().includes(search.toLowerCase()) ||
+        selectedIncident.threatType.toLowerCase().includes(search.toLowerCase()) ||
+        selectedIncident.platform.toLowerCase().includes(search.toLowerCase());
+      if (!matchStatus || !matchSearch) {
+        setSelectedIncident(null);
+        removeSelectedIdFromUrl();
+      }
+    }
+  };
+
+  const handleSearchChange = (val: string) => {
+    setSearch(val);
+    setPage(1);
+    if (selectedIncident) {
+      const matchSearch =
+        !val ||
+        selectedIncident.id.toLowerCase().includes(val.toLowerCase()) ||
+        selectedIncident.threatType.toLowerCase().includes(val.toLowerCase()) ||
+        selectedIncident.platform.toLowerCase().includes(val.toLowerCase());
+      const matchStatus =
+        statusFilter === "all" || selectedIncident.status.toLowerCase() === statusFilter.toLowerCase();
+      if (!matchSearch || !matchStatus) {
+        setSelectedIncident(null);
+        removeSelectedIdFromUrl();
+      }
+    }
+  };
 
   const totalCount = kpis?.total ?? incidents.length;
   const totalPages = Math.ceil(totalCount / pageSize) || 1;
@@ -202,10 +311,7 @@ function IncidentCenterContent() {
               {(["all", "open", "investigating", "resolved"] as const).map((st) => (
                 <button
                   key={st}
-                  onClick={() => {
-                    setStatusFilter(st);
-                    setPage(1);
-                  }}
+                  onClick={() => handleStatusFilterChange(st)}
                   className={`px-3 py-1 text-xs font-code-sm rounded transition-colors uppercase ${
                     statusFilter === st
                       ? "bg-surface-container-high border border-primary/50 text-primary font-bold"
@@ -226,10 +332,7 @@ function IncidentCenterContent() {
                 type="text"
                 placeholder="Search ID or Keyword..."
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
+                onChange={(e) => handleSearchChange(e.target.value)}
                 className="w-full bg-[#0A0C10] border border-[#30363D] rounded py-1.5 pl-9 pr-3 text-sm font-code-sm text-on-surface placeholder:text-on-surface-variant/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/50 transition-all"
               />
             </div>
@@ -365,7 +468,7 @@ function IncidentCenterContent() {
         {selectedIncident && (
           <SlideOver
             isOpen={!!selectedIncident}
-            onClose={() => setSelectedIncident(null)}
+            onClose={handleCloseDetail}
             title={selectedIncident.threatType}
             badge={
               <div className="flex items-center gap-2">
@@ -384,9 +487,22 @@ function IncidentCenterContent() {
                 </button>
                 <button
                   onClick={handleResolve}
-                  className="flex-1 bg-primary hover:bg-primary-fixed text-on-primary font-bold py-2 px-4 rounded text-xs transition-colors shadow-[0_0_10px_rgba(111,221,120,0.2)]"
+                  disabled={resolving || selectedIncident.status === "resolved"}
+                  className="flex-1 bg-primary hover:bg-primary-fixed text-on-primary font-bold py-2 px-4 rounded text-xs transition-colors shadow-[0_0_10px_rgba(111,221,120,0.2)] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
                 >
-                  Mark Resolved
+                  {resolving ? (
+                    <>
+                      <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin inline-block" />
+                      <span>Resolving...</span>
+                    </>
+                  ) : selectedIncident.status === "resolved" ? (
+                    <>
+                      <Icon name="check_circle" className="text-sm" />
+                      <span>Resolved</span>
+                    </>
+                  ) : (
+                    "Mark Resolved"
+                  )}
                 </button>
               </div>
             }
