@@ -15,6 +15,8 @@ export default function CommunityIntelligencePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stixStatus, setStixStatus] = useState<string | null>(null);
+  const [blocking, setBlocking] = useState(false);
+  const [blockFeedback, setBlockFeedback] = useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
     setLoading(true);
@@ -23,7 +25,13 @@ export default function CommunityIntelligencePage() {
       const list = await communityService.getIndicators();
       setIndicators(list);
       if (list.length > 0) {
-        setSelectedIndicator(list[0]);
+        setSelectedIndicator((prev) => {
+          if (prev) {
+            const found = list.find((i) => i.indicator === prev.indicator || i.id === prev.id);
+            if (found) return found;
+          }
+          return list[0];
+        });
       } else {
         setSelectedIndicator(null);
       }
@@ -82,6 +90,46 @@ export default function CommunityIntelligencePage() {
       console.error("Failed to export STIX bundle", err);
       setStixStatus("Export failed");
       setTimeout(() => setStixStatus(null), 2500);
+    }
+  };
+
+  const handleToggleBlockIoc = async () => {
+    if (!selectedIndicator || blocking) return;
+    const targetBlocked = !selectedIndicator.isBlocked;
+    setBlocking(true);
+    setBlockFeedback(null);
+    try {
+      await communityService.blockIndicator(selectedIndicator.indicator, targetBlocked);
+
+      const updated = { ...selectedIndicator, isBlocked: targetBlocked };
+      setSelectedIndicator(updated);
+
+      setIndicators((prev) =>
+        prev.map((ind) =>
+          ind.indicator === selectedIndicator.indicator ? { ...ind, isBlocked: targetBlocked } : ind
+        )
+      );
+
+      setBlockFeedback(
+        targetBlocked
+          ? "IOC marked as BLOCKED in database"
+          : "IOC unblocked in database"
+      );
+      setTimeout(() => setBlockFeedback(null), 3000);
+
+      // Re-fetch in background to ensure authoritative backend sync
+      try {
+        const refreshed = await communityService.getIndicators();
+        setIndicators(refreshed);
+        const match = refreshed.find((i) => i.indicator === selectedIndicator.indicator);
+        if (match) setSelectedIndicator(match);
+      } catch (_) {}
+    } catch (err) {
+      console.error("Failed to update indicator block state:", err);
+      setBlockFeedback("Failed to update block state in database");
+      setTimeout(() => setBlockFeedback(null), 3000);
+    } finally {
+      setBlocking(false);
     }
   };
 
@@ -278,8 +326,15 @@ export default function CommunityIntelligencePage() {
                             isSelected ? "bg-[#1C2128] border-l-2 border-primary" : "hover:bg-[#1C2128]"
                           }`}
                         >
-                          <td className="p-3 text-primary truncate max-w-[200px]" title={item.indicator}>
-                            {item.indicator}
+                          <td className="p-3 text-primary truncate max-w-[220px]" title={item.indicator}>
+                            <div className="flex items-center gap-1.5">
+                              <span className="truncate">{item.indicator}</span>
+                              {item.isBlocked && (
+                                <span className="shrink-0 font-label-caps text-[9px] bg-error/15 text-error border border-error/30 px-1 py-0.5 rounded font-bold">
+                                  BLOCKED
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="p-3 text-on-surface-variant uppercase text-xs">{item.type}</td>
                           <td className="p-3 font-bold text-on-surface">{item.reportsCount}</td>
@@ -309,8 +364,15 @@ export default function CommunityIntelligencePage() {
 
               <div className="flex justify-between items-start mb-6 mt-1">
                 <div>
-                  <div className="font-label-caps text-label-caps text-on-surface-variant uppercase mb-1">
-                    {selectedIndicator.type} Target
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-label-caps text-label-caps text-on-surface-variant uppercase">
+                      {selectedIndicator.type} Target
+                    </span>
+                    {selectedIndicator.isBlocked && (
+                      <span className="font-label-caps text-[9px] bg-error/20 text-error border border-error/40 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Icon name="block" className="text-[10px]" /> Blocked
+                      </span>
+                    )}
                   </div>
                   <div className="font-code-sm text-base text-error break-all font-semibold">
                     {selectedIndicator.indicator}
@@ -405,8 +467,28 @@ export default function CommunityIntelligencePage() {
                   SOC Response Actions
                 </h4>
                 <div className="flex space-x-2">
-                  <button className="flex-1 bg-surface-container-high border border-[#30363D] hover:bg-surface-container-highest text-on-surface font-body-sm text-xs py-2 rounded transition-colors flex justify-center items-center gap-1">
-                    <Icon name="block" className="text-sm" /> Block IOC
+                  <button
+                    onClick={handleToggleBlockIoc}
+                    disabled={blocking}
+                    className={`flex-1 border font-body-sm text-xs py-2 rounded transition-colors flex justify-center items-center gap-1.5 ${
+                      selectedIndicator.isBlocked
+                        ? "bg-error/15 border-error/50 hover:bg-error/25 text-error font-semibold"
+                        : "bg-surface-container-high border-[#30363D] hover:bg-surface-container-highest text-on-surface"
+                    } ${blocking ? "opacity-60 cursor-not-allowed" : ""}`}
+                    title={selectedIndicator.isBlocked ? "Unblock this IOC" : "Block this IOC"}
+                  >
+                    {blocking ? (
+                      <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Icon name={selectedIndicator.isBlocked ? "lock_open" : "block"} className="text-sm" />
+                    )}
+                    <span>
+                      {blocking
+                        ? "Updating..."
+                        : selectedIndicator.isBlocked
+                        ? "Unblock IOC"
+                        : "Block IOC"}
+                    </span>
                   </button>
                   <button
                     onClick={handleExportStix}
@@ -417,6 +499,15 @@ export default function CommunityIntelligencePage() {
                     <span>{stixStatus === "STIX 2.1 exported" ? "STIX 2.1 Exported" : "Export STIX"}</span>
                   </button>
                 </div>
+                {blockFeedback && (
+                  <p
+                    className={`text-[11px] font-code-sm text-center mt-2 animate-in fade-in duration-150 ${
+                      blockFeedback.includes("Failed") ? "text-error" : "text-primary"
+                    }`}
+                  >
+                    {blockFeedback.includes("Failed") ? blockFeedback : `✓ ${blockFeedback}`}
+                  </p>
+                )}
                 {stixStatus && (
                   <p
                     className={`text-[11px] font-code-sm text-center mt-2 animate-in fade-in duration-150 ${

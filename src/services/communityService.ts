@@ -5,6 +5,7 @@ export interface ICommunityService {
   getKpis(): Promise<CommunityKpis>;
   getIndicators(query?: string): Promise<CommunityIndicator[]>;
   getIndicatorById(id: string): Promise<CommunityIndicator | null>;
+  blockIndicator(indicator: string, blocked: boolean): Promise<boolean>;
 }
 
 class ProductionCommunityService implements ICommunityService {
@@ -30,6 +31,7 @@ class ProductionCommunityService implements ICommunityService {
           lastSeen: lastSeenFmt,
           risk: riskCapitalized,
           status,
+          isBlocked: !!item.is_blocked,
         };
       });
 
@@ -88,6 +90,16 @@ class ProductionCommunityService implements ICommunityService {
   async getIndicatorById(id: string): Promise<CommunityIndicator | null> {
     const list = await this.getIndicators();
     return list.find((i) => i.id === id || i.indicator === id) || (list.length > 0 ? list[0] : null);
+  }
+
+  async blockIndicator(indicator: string, blocked: boolean): Promise<boolean> {
+    try {
+      const res = await apiClient.blockIndicator(indicator, blocked);
+      return res.success;
+    } catch (err) {
+      console.error("Failed to update indicator block state:", err);
+      throw err;
+    }
   }
 }
 

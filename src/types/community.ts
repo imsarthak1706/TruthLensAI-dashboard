@@ -18,6 +18,7 @@ export interface CommunityIndicator {
   lastSeen?: string;
   risk: IndicatorRisk;
   status: 'Malicious' | 'Suspicious' | 'Safe';
+  isBlocked?: boolean;
   timeline?: IndicatorTimelineEvent[];
 }
 

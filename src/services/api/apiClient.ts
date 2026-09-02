@@ -447,6 +447,49 @@ export const apiClient = {
     }
   },
 
+  // 8b. Block Community Indicator (POST /api/community/block)
+  async blockIndicator(
+    indicator: string,
+    blocked: boolean
+  ): Promise<{ success: boolean; indicator: string; blocked: boolean; updated_count: number }> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/community/block`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ indicator, blocked }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errDetail = `Backend HTTP ${response.status}`;
+        try {
+          const errJson = await response.json();
+          if (errJson?.detail) errDetail = errJson.detail;
+        } catch (_) {}
+        throw new ApiError(errDetail, response.status);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(
+        error.message || "Failed to update indicator block state in database",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
+
   // 9. Incident Reports (GET /api/incidents?limit={limit}&offset={offset})
   async getIncidents(limit = 20, offset = 0): Promise<BackendIncidentsResponse> {
     const url = `${API_BASE_URL.replace(/\/$/, "")}/api/incidents?limit=${encodeURIComponent(limit)}&offset=${encodeURIComponent(offset)}`;
@@ -474,6 +517,83 @@ export const apiClient = {
       if (error instanceof ApiError) throw error;
       throw new ApiError(
         error.message || "Failed to fetch incidents from backend",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
+
+  // 10. Create Incident (POST /api/incidents)
+  async createIncident(data: {
+    scan_id: string;
+    platform?: string;
+    evidence_json?: any;
+  }): Promise<BackendIncidentItem> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/incidents`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(data),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new ApiError(`Backend HTTP ${response.status}`, response.status);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(
+        error.message || "Failed to create incident on backend",
+        500,
+        "NETWORK_ERROR"
+      );
+    }
+  },
+
+  // 11. Update Incident Status (PATCH /api/incidents/{incident_id})
+  async updateIncidentStatus(
+    incidentId: string,
+    status: "investigating" | "open" | "resolved" | string
+  ): Promise<BackendIncidentItem> {
+    const url = `${API_BASE_URL.replace(/\/$/, "")}/api/incidents/${encodeURIComponent(incidentId)}`;
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ status }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        throw new ApiError(`Backend HTTP ${response.status}`, response.status);
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(
+        error.message || "Failed to update incident status on backend",
         500,
         "NETWORK_ERROR"
       );
@@ -527,6 +647,7 @@ export interface BackendCommunityIndicatorItem {
   risk_tier: string;
   first_seen: string | null;
   last_seen: string | null;
+  is_blocked?: boolean;
 }
 
 export interface BackendCommunityFeedResponse {
