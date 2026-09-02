@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { APP_CONFIG } from "@/lib/constants";
 import { Icon } from "../ui/Icon";
 import { Button } from "../ui/Button";
 
@@ -58,7 +57,7 @@ export function TopAppBar({ onToggleMobileNav }: TopAppBarProps) {
         </div>
       </div>
 
-      {/* Center/Right: Global Search, New Scan CTA, Notifications, Profile */}
+      {/* Center/Right: Global Search, New Scan CTA, Notifications */}
       <div className="flex items-center gap-4">
         {/* Global Search Input */}
         <form onSubmit={handleSearchSubmit} className="relative w-64 lg:w-80 hidden md:block">
@@ -88,14 +87,6 @@ export function TopAppBar({ onToggleMobileNav }: TopAppBarProps) {
             <Icon name="notifications" className="text-lg" />
             <span className="w-1.5 h-1.5 rounded-full bg-error absolute top-1.5 right-1.5" />
           </button>
-
-          <div className="ml-1" title="SOC Analyst">
-            <img
-              src={APP_CONFIG.avatarUrl}
-              alt="User Avatar"
-              className="w-8 h-8 rounded-full border border-outline-variant object-cover"
-            />
-          </div>
         </div>
       </div>
     </header>

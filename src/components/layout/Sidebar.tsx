@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { APP_CONFIG, FOOTER_NAV_LINKS, NAV_LINKS } from "@/lib/constants";
+import { APP_CONFIG, NAV_LINKS } from "@/lib/constants";
 import { Icon } from "../ui/Icon";
 
 export function Sidebar() {
@@ -71,38 +71,6 @@ export function Sidebar() {
             );
           })}
         </ul>
-      </div>
-
-      {/* Footer Navigation & Profile */}
-      <div className="px-4 mt-auto">
-        {FOOTER_NAV_LINKS.length > 0 && (
-          <ul className="space-y-1 pt-4 border-t border-outline-variant">
-            {FOOTER_NAV_LINKS.map((item) => (
-              <li key={item.label}>
-                <Link
-                  href={item.href}
-                  className="flex items-center gap-3 px-4 py-2 rounded text-on-surface-variant font-medium hover:bg-surface-container-high hover:text-on-surface transition-colors"
-                >
-                  <Icon name={item.icon} className="text-lg" />
-                  <span className="font-body-sm text-body-sm">{item.label}</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* User Card */}
-        <div className="mt-4 pt-4 border-t border-outline-variant/40 flex items-center gap-3 px-2">
-          <img
-            src={APP_CONFIG.avatarUrl}
-            alt="Security Analyst"
-            className="w-8 h-8 rounded-full border border-outline-variant object-cover"
-          />
-          <div className="overflow-hidden">
-            <p className="font-body-sm text-xs font-semibold text-on-surface truncate">SOC Analyst</p>
-            <p className="font-code-sm text-[10px] text-on-surface-variant truncate">tier2@truthlens.ai</p>
-          </div>
-        </div>
       </div>
     </nav>
   );
