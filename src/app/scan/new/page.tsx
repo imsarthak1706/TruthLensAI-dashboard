@@ -791,26 +791,7 @@ export default function NewScanPage() {
           )}
 
           {/* Action Row */}
-          <div className="mt-6 flex justify-between items-center">
-            <span className="font-code-sm text-xs text-on-surface-variant hidden sm:inline">
-              {modality === "text" ? (
-                <>
-                  Endpoint: <span className="text-primary font-semibold">POST /api/scan</span>
-                </>
-              ) : modality === "image" ? (
-                <>
-                  Endpoint: <span className="text-primary font-semibold">POST /api/scan/image</span>
-                </>
-              ) : modality === "audio" ? (
-                <>
-                  Endpoint: <span className="text-primary font-semibold">POST /api/scan/audio</span>
-                </>
-              ) : (
-                <>
-                  Endpoint: <span className="text-primary font-semibold">POST /api/scan/video</span>
-                </>
-              )}
-            </span>
+          <div className="mt-6 flex justify-end items-center">
             <Button
               variant="primary"
               size="lg"
